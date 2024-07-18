@@ -15,8 +15,9 @@ PIA disconnects your connection whenever there is inactivity or enough time has 
 
 ### TODO
 
-- [ ] Setup port-forward and keep port open using keep-alive API calls
-- [ ] Expose API endpoint for retrieving port-forward port
+- [ ] Setup port-forward and keep port open using keep-alive API calls.
+- [ ] Expose API endpoint for retrieving port-forward port.
+- [ ] Consider possibilities for configuring PIA DNS in router.
 
 ## Design
 
