@@ -14,7 +14,6 @@ class Config:
         self.vpn_ping_ip = None
         self.vpn_listen_port = None
         self.print_router_response = False
-        self.force_setup = False
 
     @staticmethod
     def load_from_env():
@@ -30,5 +29,4 @@ class Config:
         cfg.vpn_ping_ip = get_env('VPN_PING_IP', default='1.1.1.1')
         cfg.vpn_listen_port = get_env_int('VPN_LISTEN_PORT', default=13231)
         cfg.print_router_response = get_env_bool('DEBUG_ROUTER')
-        cfg.force_setup = get_env_bool('FORCE_SETUP')
         return cfg

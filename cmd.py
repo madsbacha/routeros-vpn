@@ -9,11 +9,12 @@ from router import Router
 from router.utils import check_connectivity
 
 
-def run(ctx: Context, interval: int, once: bool):
+def run(ctx: Context, interval: int, once: bool, force: bool):
     while True:
-        if is_vpn_running(ctx):
+        is_vpn_running_result = is_vpn_running(ctx)
+        if is_vpn_running_result:
             print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-        else:
+        if not is_vpn_running_result or force:
             setup_vpn(ctx)
             if check_connectivity(ctx.router, ip=ctx.config.vpn_ping_ip, count=ctx.config.vpn_ping_count, interface=ctx.config.vpn_interface):
                 print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='RouterOS VPN')
     parser.add_argument("--once", action='store_true', default=False)
     parser.add_argument("--interval", type=int, default=15, help="Minutes between checking connectivity")
+    parser.add_argument("--force", action='store_true', default=False, help="Force setup of VPN even if connection is active.")
     args = parser.parse_args()
 
     from dotenv import load_dotenv
@@ -37,4 +39,4 @@ if __name__ == '__main__':
         router=Router(cfg.router_username, cfg.router_password, cfg.router_host,
                       print_router_response=cfg.print_router_response),
         pia=Pia(cfg.pia_username, cfg.pia_password),
-        config=cfg), args.interval, args.once)
+        config=cfg), args.interval, args.once, args.force)

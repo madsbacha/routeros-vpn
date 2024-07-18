@@ -68,10 +68,7 @@ def setup_vpn(ctx: Context):
 def main(ctx: Context):
     if is_vpn_running(ctx):
         print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-        if ctx.config.force_setup:
-            print(f"FORCE_SETUP is set. Continuing setup.")
-        else:
-            return
+        return
 
     setup_vpn(ctx)
 
