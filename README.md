@@ -1,4 +1,4 @@
-# RouterOS PIA WireGuard VPN
+# Overseer for PIA WireGuard VPN on MikroTik Router
 
 This repository contains a python program for continuously monitor your _[private internet access](https://www.privateinternetaccess.com/)_ VPN, and keep it connected.
 PIA disconnects your connection whenever there is inactivity or enough time has passed, a solution is therefore needed to continuously monitor and reestablish a connection whenever the connection is lost.
