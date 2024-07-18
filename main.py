@@ -1,19 +1,13 @@
 from routeros import RouterOS
 
 from config import Config
+from context import Context
 from pia import Pia
 from pia.wireguard import WireGuardConnection
 from router import Router
 from router.domain import Address
 from router.domain.wireguard import Peer
 from router.utils import gateway_from_ip, check_connectivity
-
-
-class Context:
-    def __init__(self, router: Router, pia: Pia, config: Config):
-        self.router = router
-        self.pia = pia
-        self.config = config
 
 
 def setup_address(ctx: Context, pia_wg_connection: WireGuardConnection):
