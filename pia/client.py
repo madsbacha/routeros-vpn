@@ -4,6 +4,8 @@ from urllib import parse
 import requests
 from requests_toolbelt.adapters import host_header_ssl
 
+from pia.keepalive_exception import KeepaliveException
+
 
 class Client:
     def __init__(self, username, password, debug=False):
@@ -93,4 +95,4 @@ class Client:
         if response.status_code == 200 and data['status'] == 'OK':
             return data
         print(response)
-        raise Exception("Failed to bind port")
+        raise KeepaliveException("Failed to bind port")

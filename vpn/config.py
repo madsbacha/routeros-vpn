@@ -14,7 +14,9 @@ class VpnConfig:
         self.vpn_ping_ip = None
         self.vpn_listen_port = None
         self.vpn_check_connectivity_interval = None
+        self.storage_file = None
         self.print_router_response = None
+        self.print_pia_response = None
         self.run_once = None
         self.force_setup = None
 
@@ -36,7 +38,10 @@ class VpnConfig:
         cfg.vpn_listen_port = get_env_int('VPN_LISTEN_PORT', default=13231)
         cfg.vpn_check_connectivity_interval = get_env_int('VPN_CHECK_CONNECTIVITY_INTERVAL', default=5)
 
+        cfg.storage_file = get_env('STORAGE_FILE', required=True)
+
         cfg.print_router_response = get_env_bool('DEBUG_ROUTER')
+        cfg.print_pia_response = get_env_bool('DEBUG_PIA')
         cfg.run_once = get_env_bool('RUN_ONCE', default=False)
         cfg.force_setup = get_env_bool('FORCE_SETUP', default=False)
         return cfg

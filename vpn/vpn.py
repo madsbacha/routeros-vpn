@@ -13,6 +13,7 @@ class VpnThread(threading.Thread):
     def run(self):
         while True:
             self.check_connectivity_and_reconfigure()
+            self.ctx.storage.persist("region", self.ctx.config.pia_region)
             if self.ctx.config.run_once:
                 return
             self.wait_interval()

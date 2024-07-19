@@ -1,8 +1,9 @@
-from vpn import VpnContext
+from intercom.utils import persist_connection
 from pia.wireguard import WireGuardConnection
 from router.domain import Address
 from router.domain.wireguard import Peer
-from router.utils import check_connectivity, gateway_from_ip
+from router.utils import check_connectivity
+from vpn import VpnContext
 
 
 def setup_address(ctx: VpnContext, pia_wg_connection: WireGuardConnection):
@@ -54,6 +55,7 @@ def setup_vpn(ctx: VpnContext):
     print("Setting up VPN.")
     public_key = setup_interface(ctx)
     pia_wireguard_connection = ctx.pia.create_wireguard_config(ctx.config.pia_region, public_key)
+    persist_connection(ctx.storage, pia_wireguard_connection)
     setup_address(ctx, pia_wireguard_connection)
     setup_peer(ctx, pia_wireguard_connection)
 

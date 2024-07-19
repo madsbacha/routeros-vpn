@@ -1,4 +1,5 @@
 from pia.client import Client
+from pia.portforward_exception import PortforwardException
 from pia.portforward_session import PortforwardSession
 from pia.wireguard import WireGuardConnection
 
@@ -35,13 +36,13 @@ class Pia:
         server_common_name = common_name
         response = self.client.get_signature(server_ip, server_port, server_common_name, token)
         if response["status"] != "OK":
-            raise Exception(f"Failed to create portforward session: {response['message']}")
+            raise PortforwardException(f"Failed to create portforward session: {response['message']}")
         return PortforwardSession(
             payload=response["payload"],
             signature=response["signature"],
-            gateway=server_ip,
-            port=server_port,
-            common_name=server_common_name,
+            server_ip=server_ip,
+            server_port=server_port,
+            server_common_name=server_common_name,
         )
 
     @staticmethod
@@ -49,7 +50,7 @@ class Pia:
         return server_region['port_forward']
 
     def send_portforward_keepalive(self, session: PortforwardSession):
-        self.client.bind_port(session.gateway, session.port, session.common_name, session.payload, session.signature)
+        self.client.bind_port(session.server_ip, session.server_port, session.server_common_name, session.payload, session.signature)
 
     def create_wireguard_config(self, region, public_key) -> WireGuardConnection:
         server_region = self.get_region(region)
@@ -66,5 +67,6 @@ class Pia:
             dns_servers=connection['dns_servers'],
             endpoint_port=port,
             endpoint_address=connection['server_ip'],
+            endpoint_common_name=wireguard_server['cn'],
             gateway=connection['server_vip']
         )
