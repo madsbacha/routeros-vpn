@@ -1,7 +1,6 @@
 services:
   vpn:
-    build:
-      context: .
+    image: ghcr.io/madsbacha/routeros-vpn:main
     command: vpn
     volumes:
       - storage:/storage
@@ -11,8 +10,7 @@ services:
     environment:
       - STORAGE_FILE=/storage/storage.json
   portforward:
-    build:
-      context: .
+    image: ghcr.io/madsbacha/routeros-vpn:main
     command: portforward
     volumes:
       - storage:/storage
