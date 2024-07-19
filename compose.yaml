@@ -1,0 +1,32 @@
+services:
+  vpn:
+    build:
+      context: .
+    command: vpn
+    volumes:
+      - storage:/storage
+    networks:
+      - default
+    env_file: ".env"
+    environment:
+      - STORAGE_FILE=/storage/storage.json
+  portforward:
+    build:
+      context: .
+    command: portforward
+    volumes:
+      - storage:/storage
+    networks:
+      - vpn
+    env_file: ".env"
+    environment:
+      - STORAGE_FILE=/storage/storage.json
+
+volumes:
+  storage:
+
+networks:
+  vpn:
+    external: true
+  default:
+    external: false
