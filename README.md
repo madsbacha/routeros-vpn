@@ -34,18 +34,7 @@ If no address exist, one is created. If multiple addresses exist, all are remove
 ## Getting started
 
 To get up and running, copy `.env.template` to `.env` and modify the variables to fit your setup.
-When ready, run `cmd.py`, optionally with one or more arguments:
-```shell
-cmd.py --interval=5
-```
-
-### Command arguments
-- `--once`
-  Run the program once.
-- `--force`
-  Setup VPN even if current connection is active and has connectivity.
-- `--interface=15`
-  Specify the amount of minutes to wait between checking connectivity and reconfiguring the VPN if needed. 
+When ready, run `cmd.py`.
 
 ### Environment variables
 
@@ -73,7 +62,22 @@ cmd.py --interval=5
 - `VPN_LISTEN_PORT`
     The listening port to set on the WireGuard interface when creating it. The port is not used as _we_ are connecting to PIA, but it is a required field in the router, and it is therefore configurable here, to prevent any clash with another interface using the same port.
     Default: `13231`.
+- `VPN_PORTFORWARD`
+    Enable port-forwarding on the VPN connection.
+    Default: `false`.
+- `VPN_PORTFORWARD_KEEPALIVE_INTERVAL`
+    The interval to wait, in minutes, between each keepalive sent to PIA for keeping the port active.
+    Default: `15`.
+- `VPN_CHECK_CONNECTIVITY_INTERVAL`
+    The interval to wait, in minutes, between checking connectivity of the VPN connection and reconfiguring the VPN if needed.
+    Default: `5`.
 - `DEBUG_ROUTER`
     When set to `true`, additional logs are printed to console.
     Specifically, the response for each command sent to the router.
+    Default: `false`.
+- `RUN_ONCE`
+    When set to `true`, only setup the initial connection and stop immediately afterwards, i.e., the program will not continuously run and send keepalive requests and ensure the connection is active.
+    Default: `false`.
+- `FORCE_SETUP`
+    Setup VPN even if current connection is active and has connectivity.
     Default: `false`.

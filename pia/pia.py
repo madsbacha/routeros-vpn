@@ -60,13 +60,19 @@ class Pia:
         print(response)
         raise Exception("Failed to add key to PIA WireGuard server")
 
+    def register_port(self):
+        pass
+
     def create_wireguard_config(self, region, public_key) -> WireGuardConnection:
-        port = self.get_wireguard_port()
         server_region = self.get_region(region)
+
         meta_server = server_region['servers']["meta"][0]
-        wireguard_server = server_region['servers']["wg"][0]
         token = self.get_token(meta_server["ip"], meta_server["cn"])
+
+        wireguard_server = server_region['servers']["wg"][0]
+        port = self.get_wireguard_port()
         connection = self.add_key(wireguard_server["ip"], port, wireguard_server["cn"], token, public_key)
+
         return WireGuardConnection(
             address=connection['peer_ip'],
             peer_public_key=connection['server_key'],

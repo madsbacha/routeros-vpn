@@ -1,13 +1,8 @@
-from routeros import RouterOS
-
-from config import Config
 from context import Context
-from pia import Pia
 from pia.wireguard import WireGuardConnection
-from router import Router
 from router.domain import Address
 from router.domain.wireguard import Peer
-from router.utils import gateway_from_ip, check_connectivity
+from router.utils import check_connectivity, gateway_from_ip
 
 
 def setup_address(ctx: Context, pia_wg_connection: WireGuardConnection):
@@ -63,31 +58,3 @@ def setup_vpn(ctx: Context):
     setup_peer(ctx, pia_wireguard_connection)
 
     # TODO: Route DNS
-
-
-def main(ctx: Context):
-    if is_vpn_running(ctx):
-        print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-        return
-
-    setup_vpn(ctx)
-
-    if check_connectivity(ctx.router, ip=ctx.config.vpn_ping_ip, count=ctx.config.vpn_ping_count, interface=ctx.config.vpn_interface):
-        print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-    else:
-        print(f"Failed to setup VPN.")
-
-
-def run():
-    from dotenv import load_dotenv
-    load_dotenv()
-    cfg = Config.load_from_env()
-    main(Context(
-        router=Router(cfg.router_username, cfg.router_password, cfg.router_host,
-                      print_router_response=cfg.print_router_response),
-        pia=Pia(cfg.pia_username, cfg.pia_password),
-        config=cfg))
-
-
-if __name__ == '__main__':
-    run()

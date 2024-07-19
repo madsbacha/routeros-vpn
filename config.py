@@ -13,7 +13,12 @@ class Config:
         self.vpn_ping_count = None
         self.vpn_ping_ip = None
         self.vpn_listen_port = None
-        self.print_router_response = False
+        self.vpn_portforward = None
+        self.vpn_portforward_keepalive_interval = None
+        self.vpn_check_connectivity_interval = None
+        self.print_router_response = None
+        self.run_once = None
+        self.force_setup = None
 
     @staticmethod
     def load_from_env():
@@ -28,5 +33,10 @@ class Config:
         cfg.vpn_ping_count = get_env_int('VPN_PING_COUNT', default=2)
         cfg.vpn_ping_ip = get_env('VPN_PING_IP', default='1.1.1.1')
         cfg.vpn_listen_port = get_env_int('VPN_LISTEN_PORT', default=13231)
+        cfg.vpn_portforward = get_env_bool('VPN_PORTFORWARD', default=False)
+        cfg.vpn_portforward_keepalive_interval = get_env_int('VPN_PORTFORWARD_KEEPALIVE_INTERVAL', default=15)
+        cfg.vpn_check_connectivity_interval = get_env_int('VPN_CHECK_CONNECTIVITY_INTERVAL', default=5)
         cfg.print_router_response = get_env_bool('DEBUG_ROUTER')
+        cfg.once = get_env_bool('RUN_ONCE', default=False)
+        cfg.force_setup = get_env_bool('FORCE_SETUP', default=False)
         return cfg
