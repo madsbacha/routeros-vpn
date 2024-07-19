@@ -1,13 +1,12 @@
 import threading
 import time
 
-from context import Context
-from router.utils import check_connectivity
-from vpn import is_vpn_running, setup_vpn
+from . import VpnContext
+from .utils import is_vpn_running, setup_vpn
 
 
-class ConnectionThread(threading.Thread):
-    def __init__(self, ctx: Context):
+class VpnThread(threading.Thread):
+    def __init__(self, ctx: VpnContext):
         super().__init__()
         self.ctx = ctx
 

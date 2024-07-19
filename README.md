@@ -31,6 +31,13 @@ If no peer exist, one is created. If multiple peers exist, all are removed and a
 An address (`/ip/address`) is setup for the WireGuard interface, which is updated whenever PIA assigns a new address to the WireGuard peer.
 If no address exist, one is created. If multiple addresses exist, all are removed and a new one is created.
 
+## Limitations
+
+- The program does not currently handle the DNS servers received by PIA.
+  You will have to handle DNS setup yourself.
+- The API used for communicating with PIA is based on [pia-foss/manual-connections](https://github.com/pia-foss/manual-connections),
+  as PIA does not have official support for custom WireGuard config.
+
 ## Getting started
 
 To get up and running, copy `.env.template` to `.env` and modify the variables to fit your setup.

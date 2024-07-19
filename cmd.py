@@ -1,20 +1,31 @@
 import argparse
 import threading
-import time
 
-from config import Config
-from context import Context
-from threads.connection import ConnectionThread
-from pia import Pia
-from router import Router
-from threads.portforward import PortforwardThread
+from portforward import PortforwardConfig, PortforwardContext, PortforwardThread
+from vpn import VpnConfig, VpnContext, VpnThread
 
 
-def run(ctx: Context):
-    threads = [ConnectionThread(ctx)]
-    if ctx.config.vpn_portforward:
-        threads.append(PortforwardThread(ctx))
+def run(mode: str):
+    threads = []
+    if mode == 'vpn':
+        threads.append(create_vpn_thread())
+    elif mode == 'portforward':
+        threads.append(create_portforward_thread())
+    else:
+        raise Exception('Invalid mode')
     start_threads(threads)
+
+
+def create_vpn_thread():
+    cfg = VpnConfig.load_from_env()
+    ctx = VpnContext.create_from_config(cfg)
+    return VpnThread(ctx)
+
+
+def create_portforward_thread():
+    cfg = PortforwardConfig.load_from_env()
+    ctx = PortforwardContext.create_from_config(cfg)
+    return PortforwardThread(ctx)
 
 
 def start_threads(threads: [threading.Thread]):
@@ -23,11 +34,10 @@ def start_threads(threads: [threading.Thread]):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mode', help='Specify mode of program.')
+    args = parser.parse_args()
+
     from dotenv import load_dotenv
     load_dotenv()
-    cfg = Config.load_from_env()
-    run(Context(
-        router=Router(cfg.router_username, cfg.router_password, cfg.router_host,
-                      print_router_response=cfg.print_router_response),
-        pia=Pia(cfg.pia_username, cfg.pia_password),
-        config=cfg))
+    run(args.mode)
