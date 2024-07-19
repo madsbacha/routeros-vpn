@@ -25,6 +25,9 @@ class PortforwardThread(threading.Thread):
         if self.portforward_session is None:
             connection = read_connection(self.ctx.storage)
             region = self.ctx.storage.read("region")
+            if connection is None or region is None:
+                print("No active VPN connection found")
+                return
             self.portforward_session = self.ctx.pia.create_portforward_session(
                 region,
                 connection.gateway,
