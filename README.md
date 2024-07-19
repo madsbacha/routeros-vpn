@@ -11,13 +11,13 @@ PIA disconnects your connection whenever there is inactivity or enough time has 
 - Setup WireGuard interface for PIA VPN
 - Add PIA peer to WireGuard interface and keep it updated to maintain connection
 - Setup PIA assigned address for WireGuard interface
-
+- Port forwarding through PIA VPN
+- Writes forwarded port to file (defined by `STORAGE_FILE` environment variable)
 
 ### TODO
 
-- [ ] Setup port-forward and keep port open using keep-alive API calls.
-- [ ] Expose API endpoint for retrieving port-forward port.
 - [ ] Consider possibilities for configuring PIA DNS in router.
+- [ ] How is the DSTNAT kept up to date in the router when port forwarding?
 
 ## Design
 
@@ -69,18 +69,22 @@ When ready, run `cmd.py`.
 - `VPN_LISTEN_PORT`
     The listening port to set on the WireGuard interface when creating it. The port is not used as _we_ are connecting to PIA, but it is a required field in the router, and it is therefore configurable here, to prevent any clash with another interface using the same port.
     Default: `13231`.
-- `VPN_PORTFORWARD`
-    Enable port-forwarding on the VPN connection.
-    Default: `false`.
 - `VPN_PORTFORWARD_KEEPALIVE_INTERVAL`
     The interval to wait, in minutes, between each keepalive sent to PIA for keeping the port active.
     Default: `15`.
 - `VPN_CHECK_CONNECTIVITY_INTERVAL`
     The interval to wait, in minutes, between checking connectivity of the VPN connection and reconfiguring the VPN if needed.
     Default: `5`.
+- `STORAGE_FILE`
+    Path to a json file that the program uses to store the active connection and communicate with port forwarding program.
+    Example: `./storage.json`
 - `DEBUG_ROUTER`
     When set to `true`, additional logs are printed to console.
     Specifically, the response for each command sent to the router.
+    Default: `false`.
+- `DEBUG_PIA`
+    When set to `true`, additional logs are printed to console.
+    Specifically, the response for each request sent to PIA API.
     Default: `false`.
 - `RUN_ONCE`
     When set to `true`, only setup the initial connection and stop immediately afterwards, i.e., the program will not continuously run and send keepalive requests and ensure the connection is active.
