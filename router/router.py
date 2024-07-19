@@ -103,7 +103,7 @@ class Router:
         if self.print_router_response:
             print("create_wireguard_peer", response)
         client.close()
-        return response['ret']
+        return response[0]['ret']
 
     def update_wireguard_peer(self, idx: str, peer: Peer) -> bool:
         client = self._create_router_client()
