@@ -1,6 +1,7 @@
 import threading
 import time
 
+from intercom.utils import clear_portforward
 from . import VpnContext
 from .utils import is_vpn_running, setup_vpn
 
@@ -9,6 +10,7 @@ class VpnThread(threading.Thread):
     def __init__(self, ctx: VpnContext):
         super().__init__()
         self.ctx = ctx
+        self.first_run = True
 
     def run(self):
         while True:
@@ -23,7 +25,9 @@ class VpnThread(threading.Thread):
         if is_vpn_running_result:
             self.print_vpn_status("UP")
 
-        if not is_vpn_running_result or self.ctx.config.force_setup:
+        if not is_vpn_running_result or self.ctx.config.force_setup or self.first_run:
+            self.first_run = False
+            clear_portforward(self.ctx.storage)
             setup_vpn(self.ctx)
             if is_vpn_running(self.ctx):
                 self.print_vpn_status("UP")
