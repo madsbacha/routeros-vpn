@@ -1,20 +1,16 @@
-from routeros import RouterOS
-
-from config import Config
-from context import Context
-from pia import Pia
+from intercom.utils import persist_connection
 from pia.wireguard import WireGuardConnection
-from router import Router
 from router.domain import Address
 from router.domain.wireguard import Peer
-from router.utils import gateway_from_ip, check_connectivity
+from router.utils import check_connectivity
+from vpn import VpnContext
 
 
-def setup_address(ctx: Context, pia_wg_connection: WireGuardConnection):
+def setup_address(ctx: VpnContext, pia_wg_connection: WireGuardConnection):
     new_router_address = Address(
         cidr=pia_wg_connection.address,
         interface=ctx.config.vpn_interface,
-        network=gateway_from_ip(pia_wg_connection.address)
+        network=pia_wg_connection.gateway
     )
     router_addresses = ctx.router.get_addresses(ctx.config.vpn_interface)
     if len(router_addresses) != 1:
@@ -25,7 +21,7 @@ def setup_address(ctx: Context, pia_wg_connection: WireGuardConnection):
         ctx.router.update_address(router_addresses[0].idx, new_router_address)
 
 
-def setup_peer(ctx: Context, pia_wg_connection: WireGuardConnection):
+def setup_peer(ctx: VpnContext, pia_wg_connection: WireGuardConnection):
     new_peer = Peer(
         interface=ctx.config.vpn_interface,
         address=pia_wg_connection.endpoint_address,
@@ -49,45 +45,18 @@ def setup_interface(ctx):
     return public_key
 
 
-def is_vpn_running(ctx: Context):
+def is_vpn_running(ctx: VpnContext):
     has_wireguard_interface = ctx.router.has_wireguard_interface(ctx.config.vpn_interface)
     can_connect = check_connectivity(ctx.router, ip=ctx.config.vpn_ping_ip, count=ctx.config.vpn_ping_count, interface=ctx.config.vpn_interface)
     return has_wireguard_interface and can_connect
 
 
-def setup_vpn(ctx: Context):
+def setup_vpn(ctx: VpnContext):
     print("Setting up VPN.")
     public_key = setup_interface(ctx)
     pia_wireguard_connection = ctx.pia.create_wireguard_config(ctx.config.pia_region, public_key)
+    persist_connection(ctx.storage, pia_wireguard_connection)
     setup_address(ctx, pia_wireguard_connection)
     setup_peer(ctx, pia_wireguard_connection)
 
     # TODO: Route DNS
-
-
-def main(ctx: Context):
-    if is_vpn_running(ctx):
-        print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-        return
-
-    setup_vpn(ctx)
-
-    if check_connectivity(ctx.router, ip=ctx.config.vpn_ping_ip, count=ctx.config.vpn_ping_count, interface=ctx.config.vpn_interface):
-        print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-    else:
-        print(f"Failed to setup VPN.")
-
-
-def run():
-    from dotenv import load_dotenv
-    load_dotenv()
-    cfg = Config.load_from_env()
-    main(Context(
-        router=Router(cfg.router_username, cfg.router_password, cfg.router_host,
-                      print_router_response=cfg.print_router_response),
-        pia=Pia(cfg.pia_username, cfg.pia_password),
-        config=cfg))
-
-
-if __name__ == '__main__':
-    run()

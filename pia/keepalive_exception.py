@@ -1,0 +1,2 @@
+class KeepaliveException(Exception):
+    pass

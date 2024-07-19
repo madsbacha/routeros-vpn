@@ -1,42 +1,43 @@
 import argparse
-import time
+import threading
 
-from config import Config
-from context import Context
-from main import is_vpn_running, setup_vpn
-from pia import Pia
-from router import Router
-from router.utils import check_connectivity
+from portforward import PortforwardConfig, PortforwardContext, PortforwardThread
+from vpn import VpnConfig, VpnContext, VpnThread
 
 
-def run(ctx: Context, interval: int, once: bool, force: bool):
-    while True:
-        is_vpn_running_result = is_vpn_running(ctx)
-        if is_vpn_running_result:
-            print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-        if not is_vpn_running_result or force:
-            setup_vpn(ctx)
-            if check_connectivity(ctx.router, ip=ctx.config.vpn_ping_ip, count=ctx.config.vpn_ping_count, interface=ctx.config.vpn_interface):
-                print(f"WireGuard interface {ctx.config.vpn_interface} is UP.")
-            else:
-                print(f"Failed to setup VPN.")
-        if once:
-            return
-        time.sleep(interval * 60)
+def run(mode: str):
+    threads = []
+    if mode == 'vpn':
+        threads.append(create_vpn_thread())
+    elif mode == 'portforward':
+        threads.append(create_portforward_thread())
+    else:
+        raise Exception('Invalid mode')
+    start_threads(threads)
+
+
+def create_vpn_thread():
+    cfg = VpnConfig.load_from_env()
+    ctx = VpnContext.create_from_config(cfg)
+    return VpnThread(ctx)
+
+
+def create_portforward_thread():
+    cfg = PortforwardConfig.load_from_env()
+    ctx = PortforwardContext.create_from_config(cfg)
+    return PortforwardThread(ctx)
+
+
+def start_threads(threads: [threading.Thread]):
+    for thread in threads:
+        thread.start()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='RouterOS VPN')
-    parser.add_argument("--once", action='store_true', default=False)
-    parser.add_argument("--interval", type=int, default=15, help="Minutes between checking connectivity")
-    parser.add_argument("--force", action='store_true', default=False, help="Force setup of VPN even if connection is active.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mode', help='Specify mode of program.')
     args = parser.parse_args()
 
     from dotenv import load_dotenv
     load_dotenv()
-    cfg = Config.load_from_env()
-    run(Context(
-        router=Router(cfg.router_username, cfg.router_password, cfg.router_host,
-                      print_router_response=cfg.print_router_response),
-        pia=Pia(cfg.pia_username, cfg.pia_password),
-        config=cfg), args.interval, args.once, args.force)
+    run(args.mode)
