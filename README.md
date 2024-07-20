@@ -4,7 +4,7 @@ This repository contains a python program for continuously monitor your _[privat
 PIA disconnects your connection whenever there is inactivity or enough time has passed, a solution is therefore needed to continuously monitor and reestablish a connection whenever the connection is lost.
 
 
-**The program is specifically designed for MikroTik routers, more specifically RouterOS.**
+**The program is designed for integrating with MikroTik routers, more specifically RouterOS.**
 
 ### Features
 
@@ -41,7 +41,14 @@ If no address exist, one is created. If multiple addresses exist, all are remove
 ## Getting started
 
 To get up and running, copy `.env.template` to `.env` and modify the variables to fit your setup.
-When ready, run `cmd.py`.
+When ready, run `python cmd.py [mode]`, see below for modes.
+
+The program will ensure a connection to PIA, you will then need to setup your router to route traffic through the interface yourself.
+
+The following modes exist:
+
+- `vpn` the standard mode, used for creating and overseeing the connection to PIA.
+- `portforward` used for opening a port on your VPN connection. This mode needs to be run through the active VPN connection as it needs to communicate with an API only accessible when connected through the VPN. Additionally, the storage filed specified by `STORAGE_FILE` needs to be shared between this mode and `vpn`, as the setup and configuration information is needed for port forwarding. You therefore need to run both modes simultaneously if you want to enable port forward.
 
 ### Environment variables
 
