@@ -1,2 +1,0 @@
-class KeepaliveException(Exception):
-    pass

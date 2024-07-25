@@ -1,2 +1,0 @@
-class PortforwardException(Exception):
-    pass
