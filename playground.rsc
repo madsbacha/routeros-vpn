@@ -27,15 +27,63 @@
     }
   }
 
-  :global loadServersFromFile do={
+  :global withDefault do={
+    :local valueArg $value;
+    :local defaultArg $default;
+
+    if ([:tostr $valueArg] = "") do={
+      :return $defaultArg;
+    }
+
+    :return $valueArg;
+  }
+
+  :global required do={
+    :global withDefault;
+
+    :local valueArg $1
+    :local nameArg [$withDefault value=$name default="UNKNOWN"];
+
+    if ([:tostr $valueArg] = "") do={
+      :error ("The argument " . $nameArg . " is required.");
+    }
+
+    :return $valueArg;
+  }
+
+  :global CanSuccessfullyPingOnInterface do={
+    :global withDefault;
     :global printMethodCall;
+    :global printVar;
+    :global required;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
+    :local addressArg [:tostr [$required $address name="address"]];
+    :local countArg 1;
+
+    $printMethodCall "CanSuccessfullyPingOnInterface";
+    $printVar name="interface" value=$interfaceArg;
+    $printVar name="address" value=$addressArg;
+    $printVar name="count" value=$countArg;
+
+    :do {
+      :local result [/ping interface=$interfaceArg address=$addressArg count=$countArg as-value];
+      return ($result->"status" != "timeout");
+    } on-error={
+      return false;
+    }
+  }
+
+  :global loadServersFromFile do={
+    :local fileName [ :tostr $1 ];
+
+    :global printMethodCall;
+
     $printMethodCall "loadServersFromFile";
 
-    :local fileName [ :tostr $1 ];
     :local maxChunkSize 32768;
 
     :local fileSize [/file/get $fileName size];
-
     :local offset ($fileSize - $maxChunkSize);
 
     :local content [([/file/read file=$fileName chunk-size=$maxChunkSize offset=$offset as-value]->"data")];
@@ -72,11 +120,13 @@
   };
 
   :global PIAGetRegionFromServers do={
-    :global printMethodCall;
-    $printMethodCall "PIAGetRegionFromServers";
-
     :local servers $1;
     :local region [:tostr $2];
+
+    :global printMethodCall;
+
+    $printMethodCall "PIAGetRegionFromServers";
+    
     :foreach k,v in=($servers->"regions") do={
       :local regionId ($v->"id");
       :if ($regionId = $region) do={
@@ -87,11 +137,13 @@
   }
 
   :global "PIA_getMetaServer_fromServerRegion" do={
+    :local serverRegion $1;
+
     :global printMethodCall;
     :global printDebug;
+
     $printMethodCall "PIA_getMetaServer_fromServerRegion";
 
-    :local serverRegion $1;
     :local metaServers ($serverRegion->"servers"->"meta");
     $printDebug "Found these meta servers:";
     $printDebug $metaServers;
@@ -166,10 +218,10 @@
     :local commentStr [:tostr $comment];
 
     :global printMethodCall;
+    :global printDebug;
     :global printVar;
 
     $printMethodCall "SetStaticDnsEntry";
-
     $printVar name="name" value=$nameStr;
     $printVar name="address" value=$addressStr;
     $printVar name="comment" value=$commentStr;
@@ -186,7 +238,6 @@
       $printDebug ("Upading existing static DNS entry for " . $nameStr);
       /ip/dns/static/set [find name=$nameStr] address=$addressStr comment=$commentStr;
     };
-    :global printDebug;
     $printDebug ("Added static dns entry " . $nameStr);
   }
 
@@ -210,9 +261,11 @@
   :global DoDelay do={
     :local seconds [:tostr $1];
 
+    :global printMethodCall;
     :global printDebug;
     :global printVar;
 
+    $printMethodCall "DoDelay";
     $printDebug (("Delaying " . $seconds) . " seconds");
     $printVar name="seconds" value=$seconds;
 
@@ -220,8 +273,9 @@
   }
 
   :global PIAGetToken do={
+    :local serverRegion $1;
+
     :global printMethodCall;
-    $printMethodCall "PIAGetToken";
     :global printDebug;
     :global printVar;
     :global CreateBasicAuthHeader;
@@ -232,10 +286,10 @@
     :global RemoveStaticDnsEntry;
     :global DoDelay;
 
+    $printMethodCall "PIAGetToken";
     $printVar name=PIA_USERNAME value=$"PIA_USERNAME";
     $printVar name=PIA_PASSWORD value=$"PIA_PASSWORD";
 
-    :local serverRegion $1;
     :local metaServer [$"PIA_getMetaServer_fromServerRegion" $serverRegion];
     :local metaCommonName ($metaServer->"cn");
     :local metaIp ($metaServer->"ip");
@@ -414,25 +468,39 @@
   };
 
   :do {
+    :local canPing [$CanSuccessfullyPingOnInterface interface=$"WG_INTERFACE" address=1.1.1.1];
+    if ($canPing) do={
+      :put "PIA VPN is running.";
+      :return true;
+    }
+
     :local PIAServers [$loadServersFromFile "pia-servers.txt"];
     :local region "de_berlin";
     :put "Setting up VPN for server region $region";
     :local serverRegion [$PIAGetRegionFromServers $PIAServers $region];
+
+    # Login to PIA and retrieve a token.
     :local piaToken [$PIAGetToken $serverRegion];
+
     :local wireguardServer [$"PIA_getWireGuardServer_fromServerRegion" $serverRegion];
     :local wireguardPort [$"PIA_getWireGuardPort_fromServers" $PIAServers];
+
     $EnsureWireGuardInterfaceExists $"WG_INTERFACE";
     :local publicKey [$GetPublicKeyForWireGuardInterface $"WG_INTERFACE"];
+
+    # Add our public key to the PIA servers.
     :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") \
       serverPort=$wireguardPort serverCommonName=($wireguardServer->"cn") \
       piaToken=$piaToken publicKey=$publicKey];
 
+    # Setup the PIA peer on the WireGuard interface.
     $ClearAllPeersOnInterface interface=($"WG_INTERFACE");
     $AddWireGuardPeerToInterface interface=($"WG_INTERFACE") \
       endpointAddress=($addKeyResult->"server_ip") endpointPort=($wireguardPort) \
       publicKey=($addKeyResult->"server_key") allowedAddress="0.0.0.0/0" \
       persistentKeepalive=25s;
 
+    # Setup the PIA VPN address on the WireGuard interface.
     $ClearAllAddressesOnInterface interface=($"WG_INTERFACE");
     $SetAddressOnInterface interface=($"WG_INTERFACE") \
       network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
