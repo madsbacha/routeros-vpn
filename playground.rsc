@@ -324,7 +324,8 @@
     :local keyUrl ((((((("https://" . $serverIpArg) . ":") . $serverPortArg) . "/addKey?pt=") . $piaTokenEncoded) . "&pubkey=") . $publicKeyEncoded);
     $printVar name="keyUrl" value=$keyUrl;
 
-    $SetStaticDnsEntry name=$serverCommonNameArg address=$serverIpArg comment="Temporary entry for PIA VPN Script";
+    $SetStaticDnsEntry name=$serverCommonNameArg address=$serverIpArg \
+      comment="Temporary entry for PIA VPN Script";
     $DoDelay 1s;
 
     :local result [/tool/fetch url=$keyUrl mode=https http-method=get as-value output=user];
@@ -347,6 +348,71 @@
     :return $dataJson;
   };
 
+  :global ClearAllPeersOnInterface do={
+    :local interfaceArg [:tostr $interface];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "ClearAllPeersOnInterface";
+    $printVar name="interface" value=$interfaceArg;
+
+    /interface/wireguard/peers/remove [find interface=$interfaceArg];
+  }
+
+  :global AddWireGuardPeerToInterface do={
+    :local interfaceArg [:tostr $interface];
+    :local endpointAddressArg [:tostr $endpointAddress];
+    :local endpointPortArg [:tostr $endpointPort];
+    :local publicKeyArg [:tostr $publicKey];
+    :local allowedAddressArg [:tostr $allowedAddress];
+    :local persistentKeepaliveArg [:tostr $persistentKeepalive];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global ClearAllPeersOnInterface;
+
+    $printMethodCall "AddWireGuardPeerToInterface";
+
+    /interface/wireguard/peers/add interface=$interfaceArg \
+      endpoint-address=$endpointAddressArg \
+      endpoint-port=$endpointPortArg \
+      allowed-address=$allowedAddressArg \
+      public-key=$publicKeyArg \
+      persistent-keepalive=$persistentKeepaliveArg \
+      comment="PIA VPN Peer";
+  };
+
+  :global ClearAllAddressesOnInterface do={
+    :local interfaceArg [:tostr $interface];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "ClearAllAddressesOnInterface";
+    $printVar name="interface" value=$interfaceArg;
+
+    /ip/address/remove [find interface=$interfaceArg];
+  }
+
+  :global SetAddressOnInterface do={
+    :local interfaceArg [:tostr $interface];
+    :local addressArg [:tostr $address];
+    :local networkArg [:tostr $network];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "SetAddressOnInterface";
+
+    /ip/address/add address=$addressArg network=$networkArg \
+      interface=$interfaceArg comment="PIA VPN Address";
+  };
+
   :do {
     :local PIAServers [$loadServersFromFile "pia-servers.txt"];
     :local region "de_berlin";
@@ -357,7 +423,18 @@
     :local wireguardPort [$"PIA_getWireGuardPort_fromServers" $PIAServers];
     $EnsureWireGuardInterfaceExists $"WG_INTERFACE";
     :local publicKey [$GetPublicKeyForWireGuardInterface $"WG_INTERFACE"];
-    :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") serverPort=$wireguardPort serverCommonName=($wireguardServer->"cn") piaToken=$piaToken publicKey=$publicKey]
-    :put $addKeyResult;
+    :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") \
+      serverPort=$wireguardPort serverCommonName=($wireguardServer->"cn") \
+      piaToken=$piaToken publicKey=$publicKey];
+
+    $ClearAllPeersOnInterface interface=($"WG_INTERFACE");
+    $AddWireGuardPeerToInterface interface=($"WG_INTERFACE") \
+      endpointAddress=($addKeyResult->"server_ip") endpointPort=($wireguardPort) \
+      publicKey=($addKeyResult->"server_key") allowedAddress="0.0.0.0/0" \
+      persistentKeepalive=25s;
+
+    $ClearAllAddressesOnInterface interface=($"WG_INTERFACE");
+    $SetAddressOnInterface interface=($"WG_INTERFACE") \
+      network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
   };
 }
