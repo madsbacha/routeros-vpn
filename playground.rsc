@@ -2,6 +2,8 @@
   :global "PIA_USERNAME" "";
   :global "PIA_PASSWORD" "";
 
+  :global "WG_INTERFACE" "vpn-pia-berlin-1";
+
   :global "DEBUG_LOG_METHOD_CALLS" true;
   :global "DEBUG_LOG" true;
   :global printMethodCall do={
@@ -98,6 +100,40 @@
     $printDebug $metaServer;
     :return $metaServer;
   };
+
+  :global "PIA_getWireGuardServer_fromServerRegion" do={
+    :local serverRegionArg $1;
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    $printMethodCall "PIA_getWireGuardServer_fromServerRegion";
+
+    :local wireguardServers ($serverRegionArg->"servers"->"wg");
+    $printDebug "Found these wireguard servers: ";
+    $printDebug $wireguardServers;
+    :local wireguardServer ($wireguardServers->0);
+    $printDebug "Choosing the first wireguard server:";
+    $printDebug $wireguardServer;
+    :return $wireguardServer;
+  }
+
+  :global "PIA_getWireGuardPort_fromServers" do={
+    :local serversArg $1;
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    $printMethodCall "PIA_getWireGuardPort_fromServers";
+
+    :local ports ($serversArg->"groups"->"wg"->0->"ports");
+    $printDebug "Found these wireguard ports: ";
+    $printDebug $ports;
+    :local port ($ports->0);
+    $printDebug "Choosing the first wireguard port:";
+    $printDebug $port;
+    return $port;
+  }
 
   :global CreateBasicAuthValue do={
     :local usernameArg [:tostr $username];
@@ -232,12 +268,96 @@
     :return ($tokenJson->"token");
   };
 
+  :global EnsureWireGuardInterfaceExists do={
+    :local nameArg [:tostr $1];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "EnsureWireGuardInterfaceExists";
+    $printVar name="nameArg" value=$nameArg;
+
+    :local existing [/interface/wireguard/find name=$nameArg];
+    :if ($existing = "") do={
+      /interface/wireguard/add name=$nameArg;
+      $printDebug ("Added WireGuard interface " . $nameArg);
+    };
+  }
+
+  :global GetPublicKeyForWireGuardInterface do={
+    :local nameArg [:tostr $1];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "GetPublicKeyForWireGuardInterface";
+    $printVar name="nameArg" value=$nameArg;
+
+    :local existing [/interface/wireguard/get [find name=$nameArg]];
+
+    :return ($existing->"public-key");
+  }
+
+  :global "PIA_AddWireGuardKey" do={
+    :local serverIpArg [:tostr $serverIp];
+    :local serverPortArg [:tostr $serverPort];
+    :local serverCommonNameArg [:tostr $serverCommonName];
+    :local piaTokenArg [:tostr $piaToken];
+    :local publicKeyArg [:tostr $publicKey];
+
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall "PIA_AddWireGuardKey";
+    $printVar name="serverIpArg" value=$serverIpArg;
+    $printVar name="serverPortArg" value=$serverPortArg;
+    $printVar name="serverCommonNameArg" value=$serverCommonNameArg;
+    $printVar name="piaTokenArg" value=$piaTokenArg;
+    $printVar name="publicKeyArg" value=$publicKeyArg;
+
+    :local piaTokenEncoded [:convert to=url $piaTokenArg];
+    :local publicKeyEncoded [:convert to=url $publicKeyArg];
+
+    :local keyUrl ((((((("https://" . $serverIpArg) . ":") . $serverPortArg) . "/addKey?pt=") . $piaTokenEncoded) . "&pubkey=") . $publicKeyEncoded);
+    $printVar name="keyUrl" value=$keyUrl;
+
+    $SetStaticDnsEntry name=$serverCommonNameArg address=$serverIpArg comment="Temporary entry for PIA VPN Script";
+    $DoDelay 1s;
+
+    :local result [/tool/fetch url=$keyUrl mode=https http-method=get as-value output=user];
+    $printVar name="result" value=$result;
+
+    $RemoveStaticDnsEntry name=$serverCommonNameArg;
+
+    :if ($result->"status" != "finished") do={
+      :put "Fetch failed to add WireGuard public key to PIA";
+      :put $result;
+      :return false;
+    }
+    :local dataJson [:deserialize from=json ($result->"data")];
+    if ($dataJson->"status" != "OK") do={
+      :put ("Received invalid status from PIA when adding WireGuard public key: " . ($dataJson->"status"));
+      :put ($dataJson->"message");
+      :return false;
+    }
+
+    :return $dataJson;
+  };
+
   :do {
     :local PIAServers [$loadServersFromFile "pia-servers.txt"];
     :local region "de_berlin";
     :put "Setting up VPN for server region $region";
     :local serverRegion [$PIAGetRegionFromServers $PIAServers $region];
     :local piaToken [$PIAGetToken $serverRegion];
-    :put $piaToken;
+    :local wireguardServer [$"PIA_getWireGuardServer_fromServerRegion" $serverRegion];
+    :local wireguardPort [$"PIA_getWireGuardPort_fromServers" $PIAServers];
+    $EnsureWireGuardInterfaceExists $"WG_INTERFACE";
+    :local publicKey [$GetPublicKeyForWireGuardInterface $"WG_INTERFACE"];
+    :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") serverPort=$wireguardPort serverCommonName=($wireguardServer->"cn") piaToken=$piaToken publicKey=$publicKey]
+    :put $addKeyResult;
   };
 }
