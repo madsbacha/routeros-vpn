@@ -445,6 +445,7 @@
     :global printDebug;
     :global printVar;
     :global required;
+    :global DoDelay;
 
     :local serverIpArg [:tostr [$required $serverIp name="serverIp"]];
     :local serverPortArg [:tostr [$required $serverPort name="serverPort"]];
@@ -565,6 +566,7 @@
     :global printDebug;
     :global printVar;
     :global required;
+    :global DoDelay;
 
     $printMethodCall $0;
 
@@ -574,15 +576,12 @@
     $DoDelay 1s;
   }
 
-  :global SetupVPN do={
+  :global SetupWireGuard do={
     :global printMethodCall;
     :global printDebug;
     :global printVar;
     :global required;
     :global withDefault;
-    :global FileIsOlderThan;
-    :global DoDelay;
-    :global CanSuccessfullyPingOnInterface;
     :global loadServersFromFile;
     :global PIAGetRegionFromServers;
     :global PIAGetToken;
@@ -595,42 +594,14 @@
     :global AddWireGuardPeerToInterface;
     :global ClearAllAddressesOnInterface;
     :global SetAddressOnInterface;
-    :global FileExists;
-    :global PIAFetchServers;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
     :local piaUsernameArg [$required $"pia-username" name="pia-username" description="Your PIA username."];
     :local piaPasswdArg [$required $"pia-password" name="pia-password" description="Your PIA password."];
-    :local pingAddressArg [:tostr [$withDefault value=$"ping-address" default=1.1.1.1]];
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
-    :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
 
     $printMethodCall $0;
-    $printVar name="interface" value=$interfaceArg;
-    $printVar name="region" value=$regionArg;
-    $printVar name="pia-username" value=$piaUsernameArg;
-    $printVar name="pia-password" value=$piaPasswdArg;
-    $printVar name="ping-address" value=$pingAddressArg;
-    $printVar name="servers-file-path" value=$serversFilePathArg;
-    $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
-
-    :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
-    if ($canPing) do={
-      :put "PIA VPN is running.";
-      :return true;
-    } else={
-      :put "PIA VPN is not running.";
-    }
-
-    :if (![$FileExists file=$serversFilePathArg]) do={
-      $PIAFetchServers dst-path=$serversFilePathArg;
-    }
-
-    :if ([$FileIsOlderThan file=$serversFilePathArg age=$piaServersTTLArg]) do={
-      :put "Updating PIA server list...";
-      $PIAFetchServers dst-path=$serversFilePathArg;
-    }
 
     :local PIAServers [$loadServersFromFile $serversFilePathArg];
     :put "Setting up VPN for server region $region";
@@ -661,6 +632,76 @@
     $ClearAllAddressesOnInterface interface=($interfaceArg);
     $SetAddressOnInterface interface=($interfaceArg) \
       network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
+  }
+
+  :global SetupVPN do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+    :global withDefault;
+    :global FileIsOlderThan;
+    :global CanSuccessfullyPingOnInterface;
+    :global FileExists;
+    :global PIAFetchServers;
+    :global DoDelay;
+    :global SetupWireGuard;
+
+    :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
+    :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
+    :local piaUsernameArg [$required $"pia-username" name="pia-username" description="Your PIA username."];
+    :local piaPasswdArg [$required $"pia-password" name="pia-password" description="Your PIA password."];
+    :local pingAddressArg [:tostr [$withDefault value=$"ping-address" default=1.1.1.1]];
+    :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
+    :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
+    :local shouldPortForwardArg [:tobool [$withDefault value=$"port-forward" default=false]];
+    :local portForwardToArg nothing;
+
+    :if ($shouldPortForwardArg) do={
+      :set portForwardToArg [:tostr [$required $"port-forward-to" name="port-forward-to" description="The local address to forward port-traffic to."]];
+    }
+
+    $printMethodCall $0;
+    $printVar name="interface" value=$interfaceArg;
+    $printVar name="region" value=$regionArg;
+    $printVar name="pia-username" value=$piaUsernameArg;
+    $printVar name="pia-password" value=$piaPasswdArg;
+    $printVar name="ping-address" value=$pingAddressArg;
+    $printVar name="servers-file-path" value=$serversFilePathArg;
+    $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
+
+    :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
+    :if ($canPing) do={
+      :put "PIA VPN is running.";
+    } else={
+      :put "PIA VPN is not running.";
+    }
+
+    # TODO: Verify certificates for all fetch calls.
+    # TODO: DNS Setup
+    :if (![$FileExists file=$serversFilePathArg]) do={
+      $PIAFetchServers dst-path=$serversFilePathArg;
+    }
+
+    :if ([$FileIsOlderThan file=$serversFilePathArg age=$piaServersTTLArg]) do={
+      :put "Updating PIA server list...";
+      $PIAFetchServers dst-path=$serversFilePathArg;
+    }
+
+    :if (!$canPing) do={
+      $SetupWireGuard interface=$interfaceArg \
+        region=$regionArg \
+        pia-username=$piaUsernameArg \
+        pia-password=$piaPasswdArg \
+        servers-file-path=$serversFilePathArg;
+    }
+    $DoDelay 1s;
+
+    :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
+    if ($canPing and $shouldPortForwardArg) do={
+      :put "Port forwarding...";
+      # TODO: Port portforwarding.
+    }
   };
 
   :do {
