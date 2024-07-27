@@ -108,6 +108,16 @@
     :return ($ageArg < $fileAge);
   }
 
+  :global FileExists do={
+    :global printMethodCall;
+    :global printVar;
+    :global required;
+
+    :local filePathArg [:tostr [$required $file name="file" description="The file to check if it exists."]];
+
+    :return ([:len [/file/find name=$filePathArg]] = 0);
+  }
+
   :global CanSuccessfullyPingOnInterface do={
     :global withDefault;
     :global printMethodCall;
@@ -544,6 +554,20 @@
       interface=$interfaceArg comment="PIA VPN Address";
   };
 
+  :global PIAFetchServers do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+
+    $printMethodCall $0;
+
+    :local dstPathArg [:tostr [$required $"dst-path" name="dst-path"]];
+
+    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg
+    $DoDelay 1s;
+  }
+
   :global SetupVPN do={
     :global printMethodCall;
     :global printDebug;
@@ -565,6 +589,8 @@
     :global AddWireGuardPeerToInterface;
     :global ClearAllAddressesOnInterface;
     :global SetAddressOnInterface;
+    :global FileExists;
+    :global PIAFetchServers;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -591,10 +617,13 @@
       :put "PIA VPN is not running.";
     }
 
+    :if (![$FileExists file=$serversFilePathArg]) do={
+      $PIAFetchServers dst-path=$serversFilePathArg;
+    }
+
     :if ([$FileIsOlderThan file=$serversFilePathArg age=$piaServersTTLArg]) do={
       :put "Updating PIA server list...";
-      /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$serversFilePathArg
-      $DoDelay 1s;
+      $PIAFetchServers dst-path=$serversFilePathArg;
     }
 
     :local PIAServers [$loadServersFromFile $serversFilePathArg];
