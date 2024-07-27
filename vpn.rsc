@@ -26,7 +26,7 @@
     :local valueArg $value;
     :local defaultArg $default;
 
-    if ([:tostr $valueArg] = "") do={
+    if ([:typeof $valueArg] = "nothing") do={
       :return $defaultArg;
     }
 
@@ -40,7 +40,7 @@
     :local nameArg [$withDefault value=$name default="UNKNOWN"];
     :local descriptionArg [$withDefault value=$description default=""];
 
-    if ([:tostr $valueArg] = "") do={
+    if ([:typeof $valueArg] = "nothing") do={
       :error ("The argument " . $nameArg . " is required. " . $descriptionArg);
     }
 
@@ -294,12 +294,11 @@
 
     :local existing [/ip/dns/static/find name=$nameStr];
     $printVar name="existing" value=$existing;
-    :if ($existing = "") do={
+    :if ([:len $existing] = 0) do={
       $printDebug ("No existing DNS entry exist for " . $nameStr);
       $printDebug ("Creating static DNS entry for " . $nameStr);
       /ip/dns/static/add name=$nameStr address=$addressStr comment=$commentStr;
-    };
-    :if ($existing != "") do={
+    } else={
       $printDebug ("Found existing static DNS entry for " . $nameStr);
       $printDebug ("Upading existing static DNS entry for " . $nameStr);
       /ip/dns/static/set [find name=$nameStr] address=$addressStr comment=$commentStr;
@@ -319,7 +318,7 @@
     $printVar name="nameArg" value=$nameArg;
 
     :local existing [/ip/dns/static/find name=$nameArg];
-    :if ($existing != "") do={
+    :if ([:len $existing] != 0) do={
       /ip/dns/static/remove [find name=$nameArg]
     };
     $printDebug ("Removed static dns entry " . $nameArg);
@@ -403,7 +402,7 @@
     $printVar name="nameArg" value=$nameArg;
 
     :local existing [/interface/wireguard/find name=$nameArg];
-    :if ($existing = "") do={
+    :if ([:len $existing] = 0) do={
       /interface/wireguard/add name=$nameArg;
       $printDebug ("Added WireGuard interface " . $nameArg);
     };
