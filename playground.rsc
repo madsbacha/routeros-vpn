@@ -38,9 +38,10 @@
 
     :local valueArg $1
     :local nameArg [$withDefault value=$name default="UNKNOWN"];
+    :local descriptionArg [$withDefault value=$description default=""];
 
     if ([:tostr $valueArg] = "") do={
-      :error ("The argument " . $nameArg . " is required.");
+      :error ("The argument " . $nameArg . " is required. " . $descriptionArg);
     }
 
     :return $valueArg;
@@ -440,7 +441,7 @@
     :local publicKeyArg [:tostr [$required $publicKey name="publicKey"]];
     :local allowedAddressArg [:tostr [$required $allowedAddress name="allowedAddress"]];
     :local persistentKeepaliveArg [:tostr [$required $persistentKeepalive name="persistentKeepalive"]];
-    :local commentArg [:tostr [$withDefault $comment default="PIA VPN Peer"]];
+    :local commentArg [:tostr [$withDefault value=$comment default="PIA VPN Peer"]];
 
     $printMethodCall "AddWireGuardPeerToInterface";
 
@@ -490,12 +491,12 @@
     :global required;
     :global withDefault;
 
-    :local interfaceArg [:tostr [$required $interface name="interface"]];
-    :local regionArg [:tostr [$required $region name="region"]];
-    :local piaUsernameArg [$required $"pia-username" name="pia-username"];
-    :local piaPasswdArg [$required $"pia-password" name="pia-password"];
-    :local pingAddressArg [:tostr [$withDefault $pingAddress default=1.1.1.1]];
-    :local serversFilePathArg [:tostr [$withDefault $serversFilePath default="pia-servers.txt"]];
+    :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
+    :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
+    :local piaUsernameArg [$required $"pia-username" name="pia-username" description="Your PIA username."];
+    :local piaPasswdArg [$required $"pia-password" name="pia-password" description="Your PIA password."];
+    :local pingAddressArg [:tostr [$withDefault value=$pingAddress default=1.1.1.1]];
+    :local serversFilePathArg [:tostr [$withDefault value=$serversFilePath default="pia-servers.txt"]];
 
     $printMethodCall "SetupVPN";
     $printVar name="interface" value=$interfaceArg;
