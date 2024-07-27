@@ -47,6 +47,67 @@
     :return $valueArg;
   }
 
+  :global Min do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+
+    :local firstArg [:tonum [$required $1 name="first argument"]];
+    :local secondArg [:tonum [$required $2 name="second argument"]];
+
+    $printVar name="first" value=$firstArg;
+    $printVar name="second" value=$secondArg;
+
+    if ($firstArg < $secondArg) do={
+      $printDebug ("The minimum value is the first, with value: " . $firstArg);
+      :return $firstArg;
+    }
+    $printDebug ("The minimum value is the second, with value: " . $secondArg);
+    :return $secondArg;
+  }
+
+  :global Max do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+
+    :local firstArg [:tonum [$required $1 name="first argument"]];
+    :local secondArg [:tonum [$required $2 name="second argument"]];
+
+    $printVar name="first" value=$firstArg;
+    $printVar name="second" value=$secondArg;
+
+    if ($firstArg < $secondArg) do={
+      $printDebug ("The maximum value is the second, with value: " . $secondArg);
+      :return $secondArg;
+    }
+    $printDebug ("The maximum value is the first, with value: " . $firstArg);
+    :return $firstArg;
+  }
+
+  :global FileIsOlderThan do={
+    :global required;
+    :global printMethodCall;
+    :global printVar;
+    :global Min;
+    :global Max;
+
+    :local fileArg [:tostr [$required $file name="file" description="Path to a file."]];
+    :local ageArg [:totime [$required $age name="age" description="The age to check against the creation time of the file."]];
+
+    :local currentDate [:totime [/system/clock/get date]];
+    :local currentTime [:totime [/system/clock/get time]];
+    :local currentDateTime ($currentDate + $currentTime);
+  
+    :local fileDateTime [:totime [/file/get $fileArg creation-time]];
+
+    :local fileAge ($currentDateTime - $fileDateTime);
+
+    :return ($ageArg < $fileAge);
+  }
+
   :global CanSuccessfullyPingOnInterface do={
     :global withDefault;
     :global printMethodCall;
@@ -490,26 +551,36 @@
     :global printVar;
     :global required;
     :global withDefault;
+    :global FileIsOlderThan;
+    :global DoDelay;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
     :local piaUsernameArg [$required $"pia-username" name="pia-username" description="Your PIA username."];
     :local piaPasswdArg [$required $"pia-password" name="pia-password" description="Your PIA password."];
-    :local pingAddressArg [:tostr [$withDefault value=$pingAddress default=1.1.1.1]];
-    :local serversFilePathArg [:tostr [$withDefault value=$serversFilePath default="pia-servers.txt"]];
+    :local pingAddressArg [:tostr [$withDefault value=$"ping-address" default=1.1.1.1]];
+    :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
+    :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
 
     $printMethodCall "SetupVPN";
     $printVar name="interface" value=$interfaceArg;
     $printVar name="region" value=$regionArg;
     $printVar name="pia-username" value=$piaUsernameArg;
     $printVar name="pia-password" value=$piaPasswdArg;
-    $printVar name="pingAddress" value=$pingAddressArg;
-    $printVar name="serversFilePath" value=$serversFilePathArg;
+    $printVar name="ping-address" value=$pingAddressArg;
+    $printVar name="servers-file-path" value=$serversFilePathArg;
+    $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
 
     :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     if ($canPing) do={
       :put "PIA VPN is running.";
       :return true;
+    }
+
+    :if ([$FileIsOlderThan file=$serversFilePathArg age=$piaServersTTLArg]) do={
+      :put "Updating PIA server list...";
+      /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$serversFilePathArg
+      $DoDelay 1s;
     }
 
     :local PIAServers [$loadServersFromFile $serversFilePathArg];
