@@ -40,7 +40,7 @@ If no address exist, one is created and any excess address configuration for the
 > [!NOTE]  
 > The following "Getting Started" section is a temporary solution until the script is finished and a more elegant setup is created.
 
-To get started, you need to setup the script `vpn.rsc` in your router, by going to *System > Scripts*, and create a new script with the *source* field set to the contents of `vpn.rsc`.
+To get started, you need to setup the script `vpn.rsc` in your router, by going to *System > Scripts*, and create a new script with the *source* field set to the contents of `vpn.rsc`. The script only need the `read`, `write`, and `test` policies, and you can therefore disable the rest.
 
 When inserted, edit the bottom of the file and change the parameters by filling in your PIA username and password, and possibly adjusting the PIA region and the interface name accordingly.
 
