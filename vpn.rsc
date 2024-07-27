@@ -742,7 +742,8 @@
   };
 
   :do {
-    $SetupVPN interface="vpn-pia-berlin-1" region="de_berlin" \
-      pia-username="" pia-password="";
+    $SetupVPN interface="vpn-pia-sweden-1" region="sweden" \
+      pia-username="p4879463" pia-password="EaJJozfHLt" \
+      port-forward=true port-forward-to=192.168.88.2;
   }
 }

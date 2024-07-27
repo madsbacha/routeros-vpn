@@ -1,35 +1,32 @@
 # Overseer for PIA WireGuard VPN on MikroTik Router
 
-This repository contains a python program for continuously monitor your _[private internet access](https://www.privateinternetaccess.com/)_ VPN, and keep it connected.
-PIA disconnects your connection whenever there is inactivity or enough time has passed, a solution is therefore needed to continuously monitor and reestablish a connection whenever the connection is lost.
+This repository contains a RouterOS script for creating and maintaining an _[private internet access](https://www.privateinternetaccess.com/)_ VPN, by configuring the necessary WireGuard interface and peer, address, and handling of reconfiguring the interface when the connection is lost, because of inactivity, thus reestablishing the connection to always maintain a working configuration.
 
-
-**The program is designed for integrating with MikroTik routers, more specifically RouterOS.**
+> [!IMPORTANT]  
+> This repository is still in active development. That being said, the code from the *main* branch is actively being used, and should therefore be in a working state.
 
 ### Features
 
 - Setup WireGuard interface for PIA VPN
-- Add PIA peer to WireGuard interface and keep it updated to maintain connection
-- Setup PIA assigned address for WireGuard interface
-- Port forwarding through PIA VPN
-- Writes forwarded port to file (defined by `STORAGE_FILE` environment variable)
+- Add PIA peer to WireGuard interface
+- Reconfigure WireGuard interface if connection is lost
+- Setup PIA assigned address for the WireGuard interface
 
 ### TODO
 
+- [ ] Port forwarding through PIA VPN
 - [ ] Consider possibilities for configuring PIA DNS in router.
-- [ ] How is the DSTNAT kept up to date in the router when port forwarding?
 
 ## Design
 
-The program is setup in such a way, that it creates the WireGuard interface (`/interface/wireguard`) with the specified name, if it does not exist.
-If the WireGuard interface exists, it uses that instead.
+The script is setup to ensure that the specified WireGuard interface exists, i.e., it is created if it does not exist, and otherwise uses the existing one with that name.
 It does not modify the interface after creation, and only extracts the public key.
 
-The program will ensure that only one peer (`/interface/wireguard/peer`) exist on the interface, and that the peer is setup correctly for communicating with PIA.
-If no peer exist, one is created. If multiple peers exist, all are removed and a new one is created.
+The program will ensure that only one peer exist on the interface, and that the peer is setup correctly for communicating with PIA.
+If no peer exist, one is created and any excess peers not needed for the connection is removed.
 
-An address (`/ip/address`) is setup for the WireGuard interface, which is updated whenever PIA assigns a new address to the WireGuard peer.
-If no address exist, one is created. If multiple addresses exist, all are removed and a new one is created.
+An address is setup for the WireGuard interface, which is updated whenever PIA assigns a new address to the WireGuard peer.
+If no address exist, one is created and any excess address configuration for the interface is removed.
 
 ## Limitations
 
@@ -38,64 +35,38 @@ If no address exist, one is created. If multiple addresses exist, all are remove
 - The API used for communicating with PIA is based on [pia-foss/manual-connections](https://github.com/pia-foss/manual-connections),
   as PIA does not have official support for custom WireGuard config.
 
-## Getting started
+## Getting Started
 
-To get up and running, copy `.env.template` to `.env` and modify the variables to fit your setup.
-When ready, run `python cmd.py [mode]`, see below for modes.
+> [!NOTE]  
+> The following "Getting Started" section is a temporary solution until the script is finished and a more elegant setup is created.
 
-The program will ensure a connection to PIA, you will then need to setup your router to route traffic through the interface yourself.
+To get started, you need to setup the script `vpn.rsc` in your router, by going to *System > Scripts*, and create a new script with the *source* field set to the contents of `vpn.rsc`.
 
-The following modes exist:
+When inserted, edit the bottom of the file and change the parameters by filling in your PIA username and password, and possibly adjusting the PIA region and the interface name accordingly.
 
-- `vpn` the standard mode, used for creating and overseeing the connection to PIA.
-- `portforward` used for opening a port on your VPN connection. This mode needs to be run through the active VPN connection as it needs to communicate with an API only accessible when connected through the VPN. Additionally, the storage filed specified by `STORAGE_FILE` needs to be shared between this mode and `vpn`, as the setup and configuration information is needed for port forwarding. You therefore need to run both modes simultaneously if you want to enable port forward.
+Lastly, setup a schedule to run the script every 15 minutes. This ensures the connection is checked and kept alive every 15 minutes. Replace `vpn-pia-berlin-1` in the following with what you named the above script.
+```
+/system/scheduler/add name="vpn-pia-berlin-1" interval=15m start-time=startup on-event="/system/script/run vpn-pia-berlin-1;";
+```
 
-### Environment variables
+### Parameters
 
-- `ROUTER_USERNAME`
-    The router username. Example: `admin`.
-- `ROUTER_PASSWORD`
-    The router password.
-- `ROUTER_HOST`
-    Where the router can be reached through SSH. Example: `192.168.88.1`.
-- `PIA_USERNAME`
+- `interface`
+    The name which the script uses for the WireGuard interface. The interface is created if none exist.
+    Example: `vpn-pia-berlin-1`.
+- `region`
+    The PIA server region to connect to.
+    Example: `de_berlin`.
+- `pia-username`
     Your PIA username.
-- `PIA_PASSWORD`
+- `pia-password`
     Your PIA password.
-- `PIA_REGION`
-    The PIA region to use. Example: `de_berlin`.
-- `VPN_INTERFACE`
-    What to name the WireGuard interface in the router. Example: `vpn-pia-berlin-1`.
-- `VPN_PING_COUNT`
-    The amount of pings to send for checking connectivity.
-    Only one ping needs to connect before the connection is considered active.
-    Default: `2`.
-- `VPN_PING_IP`
-    The IP to ping for checking connectivity.
+- `ping-address`
+    The address used for checking connectivity through the VPN connection. The address is pinged once to check connectivity.
     Default: `1.1.1.1`.
-- `VPN_LISTEN_PORT`
-    The listening port to set on the WireGuard interface when creating it. The port is not used as _we_ are connecting to PIA, but it is a required field in the router, and it is therefore configurable here, to prevent any clash with another interface using the same port.
-    Default: `13231`.
-- `VPN_PORTFORWARD_KEEPALIVE_INTERVAL`
-    The interval to wait, in minutes, between each keepalive sent to PIA for keeping the port active.
-    Default: `15`.
-- `VPN_CHECK_CONNECTIVITY_INTERVAL`
-    The interval to wait, in minutes, between checking connectivity of the VPN connection and reconfiguring the VPN if needed.
-    Default: `5`.
-- `STORAGE_FILE`
-    Path to a json file that the program uses to store the active connection and communicate with port forwarding program.
-    Example: `./storage.json`
-- `DEBUG_ROUTER`
-    When set to `true`, additional logs are printed to console.
-    Specifically, the response for each command sent to the router.
-    Default: `false`.
-- `DEBUG_PIA`
-    When set to `true`, additional logs are printed to console.
-    Specifically, the response for each request sent to PIA API.
-    Default: `false`.
-- `RUN_ONCE`
-    When set to `true`, only setup the initial connection and stop immediately afterwards, i.e., the program will not continuously run and send keepalive requests and ensure the connection is active.
-    Default: `false`.
-- `FORCE_SETUP`
-    Setup VPN even if current connection is active and has connectivity.
-    Default: `false`.
+- `servers-file-path`
+    Specifies a path for where to cache the PIA servers to.
+    Default: `pia-servers.txt`.
+- `pia-servers-ttl`
+    Specifies the duration of which the `servers-file-path` is kept before updated. If encountering problems connecting to PIA servers, try setting this to a lower value.
+    Default: `24h`.
