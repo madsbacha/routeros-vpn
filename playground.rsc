@@ -1,9 +1,4 @@
 :do {
-  :global "PIA_USERNAME" "";
-  :global "PIA_PASSWORD" "";
-
-  :global "WG_INTERFACE" "vpn-pia-berlin-1";
-
   :global "DEBUG_LOG_METHOD_CALLS" true;
   :global "DEBUG_LOG" true;
   :global printMethodCall do={
@@ -289,18 +284,18 @@
     :global printVar;
     :global CreateBasicAuthHeader;
     :global "PIA_getMetaServer_fromServerRegion";
-    :global "PIA_USERNAME";
-    :global "PIA_PASSWORD";
     :global SetStaticDnsEntry;
     :global RemoveStaticDnsEntry;
     :global DoDelay;
     :global required;
 
     :local serverRegion [$required $1 name="1"];
+    :local piaUsernameArg [$required $"pia-username" name="pia-username"];
+    :local piaPasswdArg [$required $"pia-password" name="pia-password"];
 
     $printMethodCall "PIAGetToken";
-    $printVar name=PIA_USERNAME value=$"PIA_USERNAME";
-    $printVar name=PIA_PASSWORD value=$"PIA_PASSWORD";
+    $printVar name="pia-username" value=$piaUsernameArg;
+    $printVar name="pia-password" value=$piaPasswdArg;
 
     :local metaServer [$"PIA_getMetaServer_fromServerRegion" $serverRegion];
     :local metaCommonName ($metaServer->"cn");
@@ -311,7 +306,7 @@
     :local tokenUrlPath "/authv3/generateToken";
     :local tokenUrl ("https://" . $metaCommonName . $tokenUrlPath);
     $printVar name=tokenUrl value=$tokenUrl;
-    :local authHeader [$CreateBasicAuthHeader username=$"PIA_USERNAME" passwd=$"PIA_PASSWORD"];
+    :local authHeader [$CreateBasicAuthHeader username=$piaUsernameArg passwd=$piaPasswdArg];
     $printVar name=authHeader value=$authHeader;
     $SetStaticDnsEntry name=$metaCommonName address=$metaIp comment="Temporary entry for PIA VPN Script";
     $DoDelay 1s;
@@ -488,26 +483,46 @@
       interface=$interfaceArg comment="PIA VPN Address";
   };
 
-  :do {
-    :local canPing [$CanSuccessfullyPingOnInterface interface=$"WG_INTERFACE" address=1.1.1.1];
+  :global SetupVPN do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+    :global withDefault;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
+    :local regionArg [:tostr [$required $region name="region"]];
+    :local piaUsernameArg [$required $"pia-username" name="pia-username"];
+    :local piaPasswdArg [$required $"pia-password" name="pia-password"];
+    :local pingAddressArg [:tostr [$withDefault $pingAddress default=1.1.1.1]];
+    :local serversFilePathArg [:tostr [$withDefault $serversFilePath default="pia-servers.txt"]];
+
+    $printMethodCall "SetupVPN";
+    $printVar name="interface" value=$interfaceArg;
+    $printVar name="region" value=$regionArg;
+    $printVar name="pia-username" value=$piaUsernameArg;
+    $printVar name="pia-password" value=$piaPasswdArg;
+    $printVar name="pingAddress" value=$pingAddressArg;
+    $printVar name="serversFilePath" value=$serversFilePathArg;
+
+    :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     if ($canPing) do={
       :put "PIA VPN is running.";
       :return true;
     }
 
-    :local PIAServers [$loadServersFromFile "pia-servers.txt"];
-    :local region "de_berlin";
+    :local PIAServers [$loadServersFromFile $serversFilePathArg];
     :put "Setting up VPN for server region $region";
-    :local serverRegion [$PIAGetRegionFromServers $PIAServers $region];
+    :local serverRegion [$PIAGetRegionFromServers $PIAServers $regionArg];
 
     # Login to PIA and retrieve a token.
-    :local piaToken [$PIAGetToken $serverRegion];
+    :local piaToken [$PIAGetToken $serverRegion pia-username=$piaUsernameArg pia-password=$piaPasswdArg];
 
     :local wireguardServer [$"PIA_getWireGuardServer_fromServerRegion" $serverRegion];
     :local wireguardPort [$"PIA_getWireGuardPort_fromServers" $PIAServers];
 
-    $EnsureWireGuardInterfaceExists $"WG_INTERFACE";
-    :local publicKey [$GetPublicKeyForWireGuardInterface $"WG_INTERFACE"];
+    $EnsureWireGuardInterfaceExists $interfaceArg;
+    :local publicKey [$GetPublicKeyForWireGuardInterface $interfaceArg];
 
     # Add our public key to the PIA servers.
     :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") \
@@ -515,15 +530,20 @@
       piaToken=$piaToken publicKey=$publicKey];
 
     # Setup the PIA peer on the WireGuard interface.
-    $ClearAllPeersOnInterface interface=($"WG_INTERFACE");
-    $AddWireGuardPeerToInterface interface=($"WG_INTERFACE") \
+    $ClearAllPeersOnInterface interface=($interfaceArg);
+    $AddWireGuardPeerToInterface interface=($interfaceArg) \
       endpointAddress=($addKeyResult->"server_ip") endpointPort=($wireguardPort) \
       publicKey=($addKeyResult->"server_key") allowedAddress="0.0.0.0/0" \
       persistentKeepalive=25s;
 
     # Setup the PIA VPN address on the WireGuard interface.
-    $ClearAllAddressesOnInterface interface=($"WG_INTERFACE");
-    $SetAddressOnInterface interface=($"WG_INTERFACE") \
+    $ClearAllAddressesOnInterface interface=($interfaceArg);
+    $SetAddressOnInterface interface=($interfaceArg) \
       network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
   };
+
+  :do {
+    $SetupVPN interface="vpn-pia-berlin-1" region="de_berlin" \
+      pia-username="" pia-password="";
+  }
 }
