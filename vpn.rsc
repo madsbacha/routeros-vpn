@@ -89,6 +89,30 @@
     :return $firstArg;
   }
 
+  :global ParseBool do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+
+    :local firstArg [$required $1 name="first argument"];
+
+    $printMethodCall $0;
+    $printVar name="first" value=$firstArg;
+
+    :local boolValue [:tobool $firstArg];
+    :if ([:typeof $boolValue] = "bool") do={
+      :return $boolValue;
+    }
+
+    :if ($firstArg = "true" or $firstArg = "True" or $firstArg = "TRUE" or $firstArg = "1" \
+          or $firstArg = "y" or $firstArg = "Y" or $firstArg = "yes" or $firstArg = "YES" \
+          or $firstArg = true) do={
+      :return true;
+    }
+    :return false;
+  }
+
   :global FileIsOlderThan do={
     :global required;
     :global printMethodCall;
@@ -635,6 +659,11 @@
   }
 
   :global Portforward do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+
+    $printMethodCall $0;
     # TODO: Port portforwarding.
   }
 
@@ -651,6 +680,7 @@
     :global DoDelay;
     :global SetupWireGuard;
     :global Portforward;
+    :global ParseBool;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -659,7 +689,7 @@
     :local pingAddressArg [:tostr [$withDefault value=$"ping-address" default=1.1.1.1]];
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
     :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
-    :local shouldPortForwardArg [:tobool [$withDefault value=$"port-forward" default=false]];
+    :local shouldPortForwardArg [$ParseBool [$withDefault value=$"port-forward" default=false]];
     :local portForwardToArg nothing;
 
     :if ($shouldPortForwardArg) do={
@@ -674,6 +704,8 @@
     $printVar name="ping-address" value=$pingAddressArg;
     $printVar name="servers-file-path" value=$serversFilePathArg;
     $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
+    $printVar name="port-forward" value=$shouldPortForwardArg;
+    $printVar name="port-forward-to" value=$portForwardToArg;
 
     :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     :if ($canPing) do={
@@ -703,7 +735,7 @@
       :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     }
 
-    if ($canPing and $shouldPortForwardArg) do={
+    :if ($canPing and $shouldPortForwardArg) do={
       :put "Port forwarding...";
       $Portforward;
     }
