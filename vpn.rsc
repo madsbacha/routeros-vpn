@@ -56,6 +56,7 @@
     :local firstArg [:tonum [$required $1 name="first argument"]];
     :local secondArg [:tonum [$required $2 name="second argument"]];
 
+    $printMethodCall $0;
     $printVar name="first" value=$firstArg;
     $printVar name="second" value=$secondArg;
 
@@ -76,6 +77,7 @@
     :local firstArg [:tonum [$required $1 name="first argument"]];
     :local secondArg [:tonum [$required $2 name="second argument"]];
 
+    $printMethodCall $0;
     $printVar name="first" value=$firstArg;
     $printVar name="second" value=$secondArg;
 
@@ -97,6 +99,8 @@
     :local fileArg [:tostr [$required $file name="file" description="Path to a file."]];
     :local ageArg [:totime [$required $age name="age" description="The age to check against the creation time of the file."]];
 
+    $printMethodCall $0;
+
     :local currentDate [:totime [/system/clock/get date]];
     :local currentTime [:totime [/system/clock/get time]];
     :local currentDateTime ($currentDate + $currentTime);
@@ -115,6 +119,8 @@
 
     :local filePathArg [:tostr [$required $file name="file" description="The file to check if it exists."]];
 
+    $printMethodCall $0;
+
     :return ([:len [/file/find name=$filePathArg]] = 0);
   }
 
@@ -128,7 +134,7 @@
     :local addressArg [:tostr [$required $address name="address"]];
     :local countArg 1;
 
-    $printMethodCall "CanSuccessfullyPingOnInterface";
+    $printMethodCall $0;
     $printVar name="interface" value=$interfaceArg;
     $printVar name="address" value=$addressArg;
     $printVar name="count" value=$countArg;
@@ -147,7 +153,7 @@
 
     :local fileName [ :tostr [$required $1 name="fileName"] ];
 
-    $printMethodCall "loadServersFromFile";
+    $printMethodCall $0;
 
     :local maxChunkSize 32768;
 
@@ -193,7 +199,7 @@
 
     :global printMethodCall;
 
-    $printMethodCall "PIAGetRegionFromServers";
+    $printMethodCall $0;
     
     :foreach k,v in=($servers->"regions") do={
       :local regionId ($v->"id");
@@ -211,7 +217,7 @@
     
     :local serverRegion [$required $1 name="serverRegion"];
 
-    $printMethodCall "PIA_getMetaServer_fromServerRegion";
+    $printMethodCall $0;
 
     :local metaServers ($serverRegion->"servers"->"meta");
     $printDebug "Found these meta servers:";
@@ -230,7 +236,7 @@
 
     :local serverRegionArg [$required $1 name="serverRegion"];
 
-    $printMethodCall "PIA_getWireGuardServer_fromServerRegion";
+    $printMethodCall $0;
 
     :local wireguardServers ($serverRegionArg->"servers"->"wg");
     $printDebug "Found these wireguard servers: ";
@@ -249,7 +255,7 @@
 
     :local serversArg [$required $1 name="servers"];
 
-    $printMethodCall "PIA_getWireGuardPort_fromServers";
+    $printMethodCall $0;
 
     :local ports ($serversArg->"groups"->"wg"->0->"ports");
     $printDebug "Found these wireguard ports: ";
@@ -267,7 +273,7 @@
     :local usernameArg [:tostr [$required $username name="username"]];
     :local passwdArg [:tostr [$required $passwd name="passwd"]];
 
-    $printMethodCall "CreateBasicAuthValue";
+    $printMethodCall $0;
 
     :return [:convert [(($usernameArg . ":") . $passwdArg)] to=base64];
   };
@@ -281,7 +287,7 @@
     :local usernameArg [:tostr [$required $username name="username"]];
     :local passwdArg [:tostr [$required $passwd name="passwd"]];
 
-    $printMethodCall "CreateBasicAuthHeader";
+    $printMethodCall $0;
 
     :local value [$CreateBasicAuthValue username=$usernameArg passwd=$passwdArg];
     :return [("Authorization: Basic " . $value)];
@@ -297,7 +303,7 @@
     :local addressStr [:tostr [$required $address name="address"]];
     :local commentStr [:tostr [$required $comment name="comment"]];
 
-    $printMethodCall "SetStaticDnsEntry";
+    $printMethodCall $0;
     $printVar name="name" value=$nameStr;
     $printVar name="address" value=$addressStr;
     $printVar name="comment" value=$commentStr;
@@ -324,7 +330,7 @@
 
     :local nameArg [:tostr [$required $name name="name"]];
 
-    $printMethodCall "RemoveStaticDnsEntry";
+    $printMethodCall $0;
     $printVar name="nameArg" value=$nameArg;
 
     :local existing [/ip/dns/static/find name=$nameArg];
@@ -342,7 +348,7 @@
 
     :local seconds [:tostr [$required $1 name="1"]];
 
-    $printMethodCall "DoDelay";
+    $printMethodCall $0;
     $printDebug (("Delaying " . $seconds) . " seconds");
     $printVar name="seconds" value=$seconds;
 
@@ -364,7 +370,7 @@
     :local piaUsernameArg [$required $"pia-username" name="pia-username"];
     :local piaPasswdArg [$required $"pia-password" name="pia-password"];
 
-    $printMethodCall "PIAGetToken";
+    $printMethodCall $0;
     $printVar name="pia-username" value=$piaUsernameArg;
     $printVar name="pia-password" value=$piaPasswdArg;
 
@@ -408,7 +414,7 @@
 
     :local nameArg [:tostr [$required $1 name="1"]];
 
-    $printMethodCall "EnsureWireGuardInterfaceExists";
+    $printMethodCall $0;
     $printVar name="nameArg" value=$nameArg;
 
     :local existing [/interface/wireguard/find name=$nameArg];
@@ -426,7 +432,7 @@
     
     :local nameArg [:tostr [$required $1 name="1"]];
 
-    $printMethodCall "GetPublicKeyForWireGuardInterface";
+    $printMethodCall $0;
     $printVar name="nameArg" value=$nameArg;
 
     :local existing [/interface/wireguard/get [find name=$nameArg]];
@@ -446,7 +452,7 @@
     :local piaTokenArg [:tostr [$required $piaToken name="piaToken"]];
     :local publicKeyArg [:tostr [$required $publicKey name="publicKey"]];
 
-    $printMethodCall "PIA_AddWireGuardKey";
+    $printMethodCall $0;
     $printVar name="serverIpArg" value=$serverIpArg;
     $printVar name="serverPortArg" value=$serverPortArg;
     $printVar name="serverCommonNameArg" value=$serverCommonNameArg;
@@ -491,7 +497,7 @@
 
     :local interfaceArg [:tostr [$required $interface name="interface"]];
 
-    $printMethodCall "ClearAllPeersOnInterface";
+    $printMethodCall $0;
     $printVar name="interface" value=$interfaceArg;
 
     /interface/wireguard/peers/remove [find interface=$interfaceArg];
@@ -513,7 +519,7 @@
     :local persistentKeepaliveArg [:tostr [$required $persistentKeepalive name="persistentKeepalive"]];
     :local commentArg [:tostr [$withDefault value=$comment default="PIA VPN Peer"]];
 
-    $printMethodCall "AddWireGuardPeerToInterface";
+    $printMethodCall $0;
 
     /interface/wireguard/peers/add interface=$interfaceArg \
       endpoint-address=$endpointAddressArg \
@@ -532,7 +538,7 @@
 
     :local interfaceArg [:tostr [$required $interface name="interface"]];
 
-    $printMethodCall "ClearAllAddressesOnInterface";
+    $printMethodCall $0;
     $printVar name="interface" value=$interfaceArg;
 
     /ip/address/remove [find interface=$interfaceArg];
@@ -548,7 +554,7 @@
     :local addressArg [:tostr [$required $address name="address"]];
     :local networkArg [:tostr [$required $network name="network"]];
 
-    $printMethodCall "SetAddressOnInterface";
+    $printMethodCall $0;
 
     /ip/address/add address=$addressArg network=$networkArg \
       interface=$interfaceArg comment="PIA VPN Address";
@@ -600,7 +606,7 @@
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
     :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
 
-    $printMethodCall "SetupVPN";
+    $printMethodCall $0;
     $printVar name="interface" value=$interfaceArg;
     $printVar name="region" value=$regionArg;
     $printVar name="pia-username" value=$piaUsernameArg;
