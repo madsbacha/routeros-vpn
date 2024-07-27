@@ -75,9 +75,10 @@
   }
 
   :global loadServersFromFile do={
-    :local fileName [ :tostr $1 ];
-
     :global printMethodCall;
+    :global required;
+
+    :local fileName [ :tostr [$required $1 name="fileName"] ];
 
     $printMethodCall "loadServersFromFile";
 
@@ -137,10 +138,11 @@
   }
 
   :global "PIA_getMetaServer_fromServerRegion" do={
-    :local serverRegion $1;
-
     :global printMethodCall;
     :global printDebug;
+    :global required;
+    
+    :local serverRegion [$required $1 name="serverRegion"];
 
     $printMethodCall "PIA_getMetaServer_fromServerRegion";
 
@@ -154,11 +156,13 @@
   };
 
   :global "PIA_getWireGuardServer_fromServerRegion" do={
-    :local serverRegionArg $1;
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local serverRegionArg [$required $1 name="serverRegion"];
+
     $printMethodCall "PIA_getWireGuardServer_fromServerRegion";
 
     :local wireguardServers ($serverRegionArg->"servers"->"wg");
@@ -171,11 +175,13 @@
   }
 
   :global "PIA_getWireGuardPort_fromServers" do={
-    :local serversArg $1;
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local serversArg [$required $1 name="servers"];
+
     $printMethodCall "PIA_getWireGuardPort_fromServers";
 
     :local ports ($serversArg->"groups"->"wg"->0->"ports");
@@ -188,10 +194,11 @@
   }
 
   :global CreateBasicAuthValue do={
-    :local usernameArg [:tostr $username];
-    :local passwdArg [:tostr $passwd];
-
     :global printMethodCall;
+    :global required;
+
+    :local usernameArg [:tostr [$required $username name="username"]];
+    :local passwdArg [:tostr [$required $passwd name="passwd"]];
 
     $printMethodCall "CreateBasicAuthValue";
 
@@ -199,12 +206,13 @@
   };
 
   :global CreateBasicAuthHeader do={
-    :local usernameArg [:tostr $username];
-    :local passwdArg [:tostr $passwd];
-
     :global printMethodCall;
     :global CreateBasicAuthValue;
     :global printVar;
+    :global required
+
+    :local usernameArg [:tostr [$required $username name="username"]];
+    :local passwdArg [:tostr [$required $passwd name="passwd"]];
 
     $printMethodCall "CreateBasicAuthHeader";
 
@@ -213,13 +221,14 @@
   }
 
   :global SetStaticDnsEntry do={
-    :local nameStr [:tostr $name];
-    :local addressStr [:tostr $address];
-    :local commentStr [:tostr $comment];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local nameStr [:tostr [$required $name name="name"]];
+    :local addressStr [:tostr [$required $address name="address"]];
+    :local commentStr [:tostr [$required $comment name="comment"]];
 
     $printMethodCall "SetStaticDnsEntry";
     $printVar name="name" value=$nameStr;
@@ -242,11 +251,12 @@
   }
 
   :global RemoveStaticDnsEntry do={
-    :local nameArg [:tostr $name];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local nameArg [:tostr [$required $name name="name"]];
 
     $printMethodCall "RemoveStaticDnsEntry";
     $printVar name="nameArg" value=$nameArg;
@@ -259,11 +269,12 @@
   }
 
   :global DoDelay do={
-    :local seconds [:tostr $1];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local seconds [:tostr [$required $1 name="1"]];
 
     $printMethodCall "DoDelay";
     $printDebug (("Delaying " . $seconds) . " seconds");
@@ -273,8 +284,6 @@
   }
 
   :global PIAGetToken do={
-    :local serverRegion $1;
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
@@ -285,6 +294,9 @@
     :global SetStaticDnsEntry;
     :global RemoveStaticDnsEntry;
     :global DoDelay;
+    :global required;
+
+    :local serverRegion [$required $1 name="1"];
 
     $printMethodCall "PIAGetToken";
     $printVar name=PIA_USERNAME value=$"PIA_USERNAME";
@@ -323,11 +335,12 @@
   };
 
   :global EnsureWireGuardInterfaceExists do={
-    :local nameArg [:tostr $1];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local nameArg [:tostr [$required $1 name="1"]];
 
     $printMethodCall "EnsureWireGuardInterfaceExists";
     $printVar name="nameArg" value=$nameArg;
@@ -340,11 +353,12 @@
   }
 
   :global GetPublicKeyForWireGuardInterface do={
-    :local nameArg [:tostr $1];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+    
+    :local nameArg [:tostr [$required $1 name="1"]];
 
     $printMethodCall "GetPublicKeyForWireGuardInterface";
     $printVar name="nameArg" value=$nameArg;
@@ -355,15 +369,16 @@
   }
 
   :global "PIA_AddWireGuardKey" do={
-    :local serverIpArg [:tostr $serverIp];
-    :local serverPortArg [:tostr $serverPort];
-    :local serverCommonNameArg [:tostr $serverCommonName];
-    :local piaTokenArg [:tostr $piaToken];
-    :local publicKeyArg [:tostr $publicKey];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local serverIpArg [:tostr [$required $serverIp name="serverIp"]];
+    :local serverPortArg [:tostr [$required $serverPort name="serverPort"]];
+    :local serverCommonNameArg [:tostr [$required $serverCommonName name="serverCommonName"]];
+    :local piaTokenArg [:tostr [$required $piaToken name="piaToken"]];
+    :local publicKeyArg [:tostr [$required $publicKey name="publicKey"]];
 
     $printMethodCall "PIA_AddWireGuardKey";
     $printVar name="serverIpArg" value=$serverIpArg;
@@ -403,11 +418,12 @@
   };
 
   :global ClearAllPeersOnInterface do={
-    :local interfaceArg [:tostr $interface];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
 
     $printMethodCall "ClearAllPeersOnInterface";
     $printVar name="interface" value=$interfaceArg;
@@ -416,17 +432,20 @@
   }
 
   :global AddWireGuardPeerToInterface do={
-    :local interfaceArg [:tostr $interface];
-    :local endpointAddressArg [:tostr $endpointAddress];
-    :local endpointPortArg [:tostr $endpointPort];
-    :local publicKeyArg [:tostr $publicKey];
-    :local allowedAddressArg [:tostr $allowedAddress];
-    :local persistentKeepaliveArg [:tostr $persistentKeepalive];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+    :global withDefault;
     :global ClearAllPeersOnInterface;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
+    :local endpointAddressArg [:tostr [$required $endpointAddress name="endpointAddress"]];
+    :local endpointPortArg [:tostr [$required $endpointPort name="endpointPort"]];
+    :local publicKeyArg [:tostr [$required $publicKey name="publicKey"]];
+    :local allowedAddressArg [:tostr [$required $allowedAddress name="allowedAddress"]];
+    :local persistentKeepaliveArg [:tostr [$required $persistentKeepalive name="persistentKeepalive"]];
+    :local commentArg [:tostr [$withDefault $comment default="PIA VPN Peer"]];
 
     $printMethodCall "AddWireGuardPeerToInterface";
 
@@ -436,15 +455,16 @@
       allowed-address=$allowedAddressArg \
       public-key=$publicKeyArg \
       persistent-keepalive=$persistentKeepaliveArg \
-      comment="PIA VPN Peer";
+      comment=$commentArg;
   };
 
   :global ClearAllAddressesOnInterface do={
-    :local interfaceArg [:tostr $interface];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
 
     $printMethodCall "ClearAllAddressesOnInterface";
     $printVar name="interface" value=$interfaceArg;
@@ -453,13 +473,14 @@
   }
 
   :global SetAddressOnInterface do={
-    :local interfaceArg [:tostr $interface];
-    :local addressArg [:tostr $address];
-    :local networkArg [:tostr $network];
-
     :global printMethodCall;
     :global printDebug;
     :global printVar;
+    :global required;
+
+    :local interfaceArg [:tostr [$required $interface name="interface"]];
+    :local addressArg [:tostr [$required $address name="address"]];
+    :local networkArg [:tostr [$required $network name="network"]];
 
     $printMethodCall "SetAddressOnInterface";
 
