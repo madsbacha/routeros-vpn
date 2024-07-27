@@ -552,6 +552,19 @@
     :global withDefault;
     :global FileIsOlderThan;
     :global DoDelay;
+    :global CanSuccessfullyPingOnInterface;
+    :global loadServersFromFile;
+    :global PIAGetRegionFromServers;
+    :global PIAGetToken;
+    :global "PIA_getWireGuardServer_fromServerRegion";
+    :global "PIA_getWireGuardPort_fromServers";
+    :global GetPublicKeyForWireGuardInterface;
+    :global "PIA_AddWireGuardKey";
+    :global EnsureWireGuardInterfaceExists;
+    :global ClearAllPeersOnInterface;
+    :global AddWireGuardPeerToInterface;
+    :global ClearAllAddressesOnInterface;
+    :global SetAddressOnInterface;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -574,6 +587,8 @@
     if ($canPing) do={
       :put "PIA VPN is running.";
       :return true;
+    } else={
+      :put "PIA VPN is not running.";
     }
 
     :if ([$FileIsOlderThan file=$serversFilePathArg age=$piaServersTTLArg]) do={
