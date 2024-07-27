@@ -125,7 +125,7 @@
 
     :do {
       :local result [/ping interface=$interfaceArg address=$addressArg count=$countArg as-value];
-      return ($result->"status" != "timeout");
+      return ([:typeof ($result->"status")] = "nothing");
     } on-error={
       return false;
     }
