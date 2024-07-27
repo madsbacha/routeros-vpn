@@ -634,6 +634,10 @@
       network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
   }
 
+  :global Portforward do={
+    # TODO: Port portforwarding.
+  }
+
   :global SetupVPN do={
     :global printMethodCall;
     :global printDebug;
@@ -646,6 +650,7 @@
     :global PIAFetchServers;
     :global DoDelay;
     :global SetupWireGuard;
+    :global Portforward;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -694,13 +699,13 @@
         pia-username=$piaUsernameArg \
         pia-password=$piaPasswdArg \
         servers-file-path=$serversFilePathArg;
+      $DoDelay 1s;
+      :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     }
-    $DoDelay 1s;
 
-    :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     if ($canPing and $shouldPortForwardArg) do={
       :put "Port forwarding...";
-      # TODO: Port portforwarding.
+      $Portforward;
     }
   };
 
