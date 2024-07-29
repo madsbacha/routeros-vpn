@@ -630,7 +630,7 @@
 
     :local dstPathArg [:tostr [$required $"dst-path" name="dst-path"]];
 
-    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg check-certificate=yes
+    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg
     $DoDelay 1s;
   }
 
@@ -642,11 +642,14 @@
 
     $printMethodCall $0;
 
-    :put "Installing PIA CA Certificate...";
-    :local dstPath "pia-ca.rsa.4096.crt";
-    /tool/fetch "https://raw.githubusercontent.com/madsbacha/routeros-vpn/main/ca.rsa.4096.crt" dst-path=$dstPath;
-    $DoDelay 1s;
-    /certificate/import file-name=$dstPath;
+    :local existing [/certificate/find common-name="Private Internet Access"];
+    :if ([:len $existing] = 0) do={
+      :put "Installing PIA CA Certificate...";
+      :local dstPath "pia-ca.rsa.4096.crt";
+      /tool/fetch "https://raw.githubusercontent.com/madsbacha/routeros-vpn/main/ca.rsa.4096.crt" dst-path=$dstPath;
+      $DoDelay 1s;
+      /certificate/import file-name=$dstPath;
+    };
   }
 
   :global SetupWireGuard do={
