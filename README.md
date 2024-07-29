@@ -1,6 +1,6 @@
 # Overseer for PIA WireGuard VPN on MikroTik Router
 
-This repository contains a RouterOS script for creating and maintaining an _[private internet access](https://www.privateinternetaccess.com/)_ VPN, by configuring the necessary WireGuard interface and peer, address, and handling of reconfiguring the interface when the connection is lost, because of inactivity, thus reestablishing the connection to always maintain a working configuration.
+This repository contains a RouterOS script for creating and maintaining a _[private internet access](https://www.privateinternetaccess.com/)_ VPN, by configuring the necessary WireGuard interface and peer, address, and handling of reconfiguring the interface when the connection is lost, because of inactivity, thus reestablishing the connection to always maintain a working configuration.
 
 > [!IMPORTANT]  
 > This repository is still in active development. That being said, the code from the *main* branch is actively being used, and should therefore be in a working state.
