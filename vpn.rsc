@@ -389,20 +389,36 @@
     :global RemoveStaticDnsEntry;
     :global DoDelay;
     :global required;
+    :global ParseBool;
+    :global InstallPIACertificate;
+    :global withDefault;
 
     :local serverRegion [$required $1 name="1"];
     :local piaUsernameArg [$required $"pia-username" name="pia-username"];
     :local piaPasswdArg [$required $"pia-password" name="pia-password"];
+    :local verifyCertificateArg [$ParseBool [$withDefault value=$"verify-pia-certificate" default=true]];
+    :local installCertificateArg [$ParseBool [$withDefault value=$"install-pia-certificate" default=true]];
 
     $printMethodCall $0;
     $printVar name="pia-username" value=$piaUsernameArg;
     $printVar name="pia-password" value=$piaPasswdArg;
+    $printVar name="verify-pia-certificate" value=$verifyCertificateArg;
+    $printVar name="install-pia-certificate" value=$installCertificateArg;
 
     :local metaServer [$"PIA_getMetaServer_fromServerRegion" $serverRegion];
     :local metaCommonName ($metaServer->"cn");
     :local metaIp ($metaServer->"ip");
     $printVar name=metaCommonName value=$metaCommonName;
     $printVar name=metaIp value=$metaIp;
+
+    :local verifyCertificateValue "yes";
+    :if ($verifyCertificateArg) do={
+      :if ($installCertificateArg) do={
+        $InstallPIACertificate;
+      }
+    } else={
+      :set $verifyCertificateArg "no";
+    }
 
     :local tokenUrlPath "/authv3/generateToken";
     :local tokenUrl ("https://" . $metaCommonName . $tokenUrlPath);
@@ -411,7 +427,7 @@
     $printVar name=authHeader value=$authHeader;
     $SetStaticDnsEntry name=$metaCommonName address=$metaIp comment="Temporary entry for PIA VPN Script";
     $DoDelay 1s;
-    :local result [/tool/fetch url=$tokenUrl mode=https http-method=get http-header-field=$authHeader as-value output=user];
+    :local result [/tool/fetch url=$tokenUrl mode=https check-certificate=$verifyCertificateValue http-method=get http-header-field=$authHeader as-value output=user];
     $printVar name="result" value=$result;
     $RemoveStaticDnsEntry name=$metaCommonName;
 
@@ -470,12 +486,19 @@
     :global printVar;
     :global required;
     :global DoDelay;
+    :global ParseBool;
+    :global InstallPIACertificate;
+    :global withDefault;
+    :global SetStaticDnsEntry;
+    :global RemoveStaticDnsEntry;
 
     :local serverIpArg [:tostr [$required $serverIp name="serverIp"]];
     :local serverPortArg [:tostr [$required $serverPort name="serverPort"]];
     :local serverCommonNameArg [:tostr [$required $serverCommonName name="serverCommonName"]];
     :local piaTokenArg [:tostr [$required $piaToken name="piaToken"]];
     :local publicKeyArg [:tostr [$required $publicKey name="publicKey"]];
+    :local verifyCertificateArg [$ParseBool [$withDefault value=$"verify-pia-certificate" default=true]];
+    :local installCertificateArg [$ParseBool [$withDefault value=$"install-pia-certificate" default=true]];
 
     $printMethodCall $0;
     $printVar name="serverIpArg" value=$serverIpArg;
@@ -483,18 +506,29 @@
     $printVar name="serverCommonNameArg" value=$serverCommonNameArg;
     $printVar name="piaTokenArg" value=$piaTokenArg;
     $printVar name="publicKeyArg" value=$publicKeyArg;
+    $printVar name="verify-pia-certificate" value=$verifyCertificateArg;
+    $printVar name="install-pia-certificate" value=$installCertificateArg;
+
+    :local verifyCertificateValue "yes";
+    :if ($verifyCertificateArg) do={
+      :if ($installCertificateArg) do={
+        $InstallPIACertificate;
+      }
+    } else={
+      :set $verifyCertificateArg "no";
+    }
 
     :local piaTokenEncoded [:convert to=url $piaTokenArg];
     :local publicKeyEncoded [:convert to=url $publicKeyArg];
 
-    :local keyUrl ((((((("https://" . $serverIpArg) . ":") . $serverPortArg) . "/addKey?pt=") . $piaTokenEncoded) . "&pubkey=") . $publicKeyEncoded);
+    :local keyUrl ((((((("https://" . $serverCommonNameArg) . ":") . $serverPortArg) . "/addKey?pt=") . $piaTokenEncoded) . "&pubkey=") . $publicKeyEncoded);
     $printVar name="keyUrl" value=$keyUrl;
 
     $SetStaticDnsEntry name=$serverCommonNameArg address=$serverIpArg \
       comment="Temporary entry for PIA VPN Script";
     $DoDelay 1s;
 
-    :local result [/tool/fetch url=$keyUrl mode=https http-method=get as-value output=user];
+    :local result [/tool/fetch url=$keyUrl mode=https check-certificate=$verifyCertificateValue http-method=get as-value output=user];
     $printVar name="result" value=$result;
 
     $RemoveStaticDnsEntry name=$serverCommonNameArg;
@@ -596,8 +630,23 @@
 
     :local dstPathArg [:tostr [$required $"dst-path" name="dst-path"]];
 
-    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg
+    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg check-certificate=yes
     $DoDelay 1s;
+  }
+
+  :global InstallPIACertificate do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global DoDelay;
+
+    $printMethodCall $0;
+
+    :put "Installing PIA CA Certificate...";
+    :local dstPath "pia-ca.rsa.4096.crt";
+    /tool/fetch "https://raw.githubusercontent.com/madsbacha/routeros-vpn/main/ca.rsa.4096.crt" dst-path=$dstPath;
+    $DoDelay 1s;
+    /certificate/import file-name=$dstPath;
   }
 
   :global SetupWireGuard do={
@@ -618,12 +667,15 @@
     :global AddWireGuardPeerToInterface;
     :global ClearAllAddressesOnInterface;
     :global SetAddressOnInterface;
+    :global ParseBool;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
     :local piaUsernameArg [$required $"pia-username" name="pia-username" description="Your PIA username."];
     :local piaPasswdArg [$required $"pia-password" name="pia-password" description="Your PIA password."];
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
+    :local verifyCertificateArg [$ParseBool [$withDefault value=$"verify-pia-certificate" default=true]];
+    :local installCertificateArg [$ParseBool [$withDefault value=$"install-pia-certificate" default=true]];
 
     $printMethodCall $0;
 
@@ -632,7 +684,8 @@
     :local serverRegion [$PIAGetRegionFromServers $PIAServers $regionArg];
 
     # Login to PIA and retrieve a token.
-    :local piaToken [$PIAGetToken $serverRegion pia-username=$piaUsernameArg pia-password=$piaPasswdArg];
+    :local piaToken [$PIAGetToken $serverRegion pia-username=$piaUsernameArg pia-password=$piaPasswdArg \
+      verify-pia-certificate=$verifyCertificateArg install-pia-certificate=$installCertificateArg];
 
     :local wireguardServer [$"PIA_getWireGuardServer_fromServerRegion" $serverRegion];
     :local wireguardPort [$"PIA_getWireGuardPort_fromServers" $PIAServers];
@@ -643,7 +696,8 @@
     # Add our public key to the PIA servers.
     :local addKeyResult [$"PIA_AddWireGuardKey" serverIp=($wireguardServer->"ip") \
       serverPort=$wireguardPort serverCommonName=($wireguardServer->"cn") \
-      piaToken=$piaToken publicKey=$publicKey];
+      piaToken=$piaToken publicKey=$publicKey verify-pia-certificate=$verifyCertificateArg \
+      install-pia-certificate=$installCertificateArg];
 
     # Setup the PIA peer on the WireGuard interface.
     $ClearAllPeersOnInterface interface=($interfaceArg);
@@ -698,6 +752,9 @@
     :global Portforward;
     :global ParseBool;
     :global EnsureVPNMasquerading;
+    :global PIAGetToken;
+    :global PIAGetRegionFromServers;
+    :global loadServersFromFile;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -707,6 +764,8 @@
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
     :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
     :local setupMasqueradeArg [$ParseBool [$withDefault value=$"masquerade" default=true]];
+    :local verifyCertificateArg [$ParseBool [$withDefault value=$"verify-pia-certificate" default=true]];
+    :local installCertificateArg [$ParseBool [$withDefault value=$"install-pia-certificate" default=true]];
     :local shouldPortForwardArg [$ParseBool [$withDefault value=$"port-forward" default=false]];
     :local portForwardToArg nothing;
 
@@ -723,6 +782,8 @@
     $printVar name="servers-file-path" value=$serversFilePathArg;
     $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
     $printVar name="masquerade" value=$setupMasqueradeArg;
+    $printVar name="verify-pia-certificate" value=$verifyCertificateArg;
+    $printVar name="install-pia-certificate" value=$installCertificateArg;
     $printVar name="port-forward" value=$shouldPortForwardArg;
     $printVar name="port-forward-to" value=$portForwardToArg;
 
@@ -744,12 +805,13 @@
       $PIAFetchServers dst-path=$serversFilePathArg;
     }
 
-    :if (!$canPing) do={
+    :if (!$canPing or true) do={
       $SetupWireGuard interface=$interfaceArg \
         region=$regionArg \
         pia-username=$piaUsernameArg \
         pia-password=$piaPasswdArg \
-        servers-file-path=$serversFilePathArg;
+        servers-file-path=$serversFilePathArg \
+        verify-pia-certificate=$verifyCertificateArg install-pia-certificate=$installCertificateArg;
       $DoDelay 1s;
       :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     }
