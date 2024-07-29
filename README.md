@@ -14,8 +14,9 @@ This repository contains a RouterOS script for creating and maintaining an _[pri
 
 ### TODO
 
-- [ ] Port forwarding through PIA VPN
+- [ ] Port forwarding through PIA VPN.
 - [ ] Consider possibilities for configuring PIA DNS in router.
+- [ ] Verify TLS certificates when calling PIA API.
 
 ## Design
 
