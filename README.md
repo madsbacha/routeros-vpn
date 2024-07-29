@@ -51,6 +51,9 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 /system/scheduler/add name="vpn-pia-berlin-1" interval=15m start-time=startup on-event="/system/script/run vpn-pia-berlin-1;";
 ```
 
+> [!IMPORTANT]
+> The script automatically creates the specified interface if it does not exist, and ensures a working VPN connection is setup through the WireGuard interface. Hereafter, it is your responsibility to configure the router to actually route any desired traffic through the interface.
+
 ### Parameters
 
 - `interface`
