@@ -11,13 +11,13 @@ This repository contains a RouterOS script for creating and maintaining an _[pri
 - Add PIA peer to WireGuard interface
 - Reconfigure WireGuard interface if connection is lost
 - Setup PIA assigned address for the WireGuard interface
+- Automatically setup src masquerading for outgoing traffic on the VPN interface 
 
 ### TODO
 
 - [ ] Port forwarding through PIA VPN.
 - [ ] Consider possibilities for configuring PIA DNS in router.
 - [ ] Verify TLS certificates when calling PIA API.
-- [ ] Automaticaly configure srcnat for outgoing traffic through the interface
 
 ## Design
 
@@ -72,3 +72,6 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 - `pia-servers-ttl`
     Specifies the duration of which the `servers-file-path` is kept before updated. If encountering problems connecting to PIA servers, try setting this to a lower value.
     Default: `24h`.
+- `masquerade`
+    Specified whether to automatically create a src masquerade rule in your firewall.
+    Default: `true`.

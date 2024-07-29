@@ -658,6 +658,22 @@
       network=($addKeyResult->"server_vip") address=($addKeyResult->"peer_ip");
   }
 
+  :global EnsureVPNMasquerading do={
+    :global printMethodCall;
+    :global printDebug;
+    :global printVar;
+    :global required;
+
+    :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create a src masquerade rule for."]];
+
+    $printMethodCall $0;
+
+    :local existing [/ip/firewall/nat/find out-interface=$interfaceArg];
+    :if ([:len $existing] = 0) do={
+      /ip/firewall/nat/add chain=srcnat action=masquerade out-interface=$interfaceArg comment="PIA VPN: Masquerade outgoing traffic";
+    };
+  }
+
   :global Portforward do={
     :global printMethodCall;
     :global printDebug;
@@ -681,6 +697,7 @@
     :global SetupWireGuard;
     :global Portforward;
     :global ParseBool;
+    :global EnsureVPNMasquerading;
 
     :local interfaceArg [:tostr [$required $interface name="interface" description="The name of the WireGuard interface to create/use for the VPN connection."]];
     :local regionArg [:tostr [$required $region name="region" description="The PIA VPN region to use for this VPN connection."]];
@@ -689,6 +706,7 @@
     :local pingAddressArg [:tostr [$withDefault value=$"ping-address" default=1.1.1.1]];
     :local serversFilePathArg [:tostr [$withDefault value=$"servers-file-path" default="pia-servers.txt"]];
     :local piaServersTTLArg [:totime [$withDefault value=$"pia-servers-ttl" default=24h]];
+    :local setupMasqueradeArg [$ParseBool [$withDefault value=$"masquerade" default=true]];
     :local shouldPortForwardArg [$ParseBool [$withDefault value=$"port-forward" default=false]];
     :local portForwardToArg nothing;
 
@@ -704,6 +722,7 @@
     $printVar name="ping-address" value=$pingAddressArg;
     $printVar name="servers-file-path" value=$serversFilePathArg;
     $printVar name="pia-servers-ttl" value=$piaServersTTLArg;
+    $printVar name="masquerade" value=$setupMasqueradeArg;
     $printVar name="port-forward" value=$shouldPortForwardArg;
     $printVar name="port-forward-to" value=$portForwardToArg;
 
@@ -733,6 +752,10 @@
         servers-file-path=$serversFilePathArg;
       $DoDelay 1s;
       :set canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
+    }
+
+    :if ($setupMasqueradeArg) do={
+      $EnsureVPNMasquerading interface=$interfaceArg;
     }
 
     :if ($canPing and $shouldPortForwardArg) do={
