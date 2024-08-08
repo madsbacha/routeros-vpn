@@ -808,7 +808,7 @@
       $PIAFetchServers dst-path=$serversFilePathArg;
     }
 
-    :if (!$canPing or true) do={
+    :if (!$canPing) do={
       $SetupWireGuard interface=$interfaceArg \
         region=$regionArg \
         pia-username=$piaUsernameArg \
