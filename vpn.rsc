@@ -145,7 +145,7 @@
 
     $printMethodCall $0;
 
-    :return ([:len [/file/find name=$filePathArg]] = 0);
+    :return ([:len [/file/find name=$filePathArg]] > 0);
   }
 
   :global CanSuccessfullyPingOnInterface do={
