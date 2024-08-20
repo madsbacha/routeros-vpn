@@ -515,7 +515,7 @@
         $InstallPIACertificate;
       }
     } else={
-      :set $verifyCertificateArg "no";
+      :set $verifyCertificateValue "no";
     }
 
     :local piaTokenEncoded [:convert to=url $piaTokenArg];
