@@ -417,7 +417,7 @@
         $InstallPIACertificate;
       }
     } else={
-      :set $verifyCertificateArg "no";
+      :set $verifyCertificateValue "no";
     }
 
     :local tokenUrlPath "/authv3/generateToken";
