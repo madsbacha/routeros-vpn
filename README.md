@@ -48,7 +48,7 @@ To get started, you need to setup the script `vpn.rsc` in your router, by going 
 
 When inserted, edit the bottom of the file and change the parameters by filling in your PIA username and password, and possibly adjusting the PIA region and the interface name accordingly.
 
-Lastly, setup a schedule to run the script every 15 minutes. This ensures the connection is checked and kept alive every 15 minutes. Replace `vpn-pia-berlin-1` in the following with what you named the above script.
+Lastly, setup a schedule to run the script every 15 minutes. This ensures the connection is checked every 15 minutes and reconfigured if the connection is down. Replace `vpn-pia-berlin-1` in the following with what you named the above script.
 ```
 /system/scheduler/add name="vpn-pia-berlin-1" interval=15m start-time=startup on-event="/system/script/run vpn-pia-berlin-1;";
 ```
