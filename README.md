@@ -47,6 +47,7 @@ If no address exist, one is created and any excess address configuration for the
 To get started, you need to setup the script `vpn.rsc` in your router, by going to *System > Scripts*, and create a new script with the *source* field set to the contents of `vpn.rsc`. The script only need the `read`, `write`, and `test` policies, and you can therefore disable the rest.
 
 When inserted, edit the bottom of the file and change the parameters by filling in your PIA username and password, and possibly adjusting the PIA region and the interface name accordingly.
+If your password contain the characters `?` or `$`, you need to escape them with a backslash; `\?` and `\$`. See the [Scripting Wiki page](https://wiki.mikrotik.com/wiki/Manual:Scripting#:~:text=value%20is%20assigned%3B-,Constant%20Escape%20Sequences,-Following%20escape%20sequences) for more info. Additionally, avoid instances of `$[]` and `$()` as they are used for [inserting expressions inside strings](https://wiki.mikrotik.com/wiki/Manual:Scripting#:~:text=By%20using%20%24%5B%5D%20and%20%24()%20in%20string%20it%20is%20possible%20to%20add%20expressions%20inside%20strings).
 
 Lastly, setup a schedule to run the script every 15 minutes. This ensures the connection is checked every 15 minutes and reconfigured if the connection is down. Replace `vpn-pia-berlin-1` in the following with what you named the above script.
 ```
