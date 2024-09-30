@@ -129,7 +129,7 @@
     :local currentTime [:totime [/system/clock/get time]];
     :local currentDateTime ($currentDate + $currentTime);
   
-    :local fileDateTime [:totime [/file/get $fileArg creation-time]];
+    :local fileDateTime [:totime [/file/get $fileArg value-name=last-modified]];
 
     :local fileAge ($currentDateTime - $fileDateTime);
 
