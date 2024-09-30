@@ -5,7 +5,7 @@ This repository contains a RouterOS script for creating and maintaining a _[priv
 > [!IMPORTANT]  
 > This repository is still in active development. That being said, the code from the *main* branch is actively being used, and should therefore be in a working state.
 
-This script is verified to work on RouterOS version 7.14 and newer.
+This script is verified to work on RouterOS version 7.16.
 
 ### Features
 
