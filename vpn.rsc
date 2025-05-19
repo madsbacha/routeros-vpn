@@ -615,7 +615,7 @@
     :if ([:len $existing] = 0) do={
       :put "Installing PIA CA Certificate...";
       :local dstPath "pia-ca.rsa.4096.crt";
-      /tool/fetch "https://raw.githubusercontent.com/madsbacha/routeros-vpn/7816c0887a69df6136beaaa6c87ed1155493a871/ca.rsa.4096.crt" dst-path=$dstPath;
+      /tool/fetch "https://raw.githubusercontent.com/pia-foss/manual-connections/refs/heads/master/ca.rsa.4096.crt" dst-path=$dstPath;
       $DoDelay 1s;
       /certificate/import file-name=$dstPath;
     };
