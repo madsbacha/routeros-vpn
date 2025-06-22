@@ -55,7 +55,7 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 ```
 
 > [!IMPORTANT]
-> The script automatically creates the specified interface if it does not exist, and ensures a working VPN connection is setup through the WireGuard interface. Hereafter, it is your responsibility to configure the router to actually route any desired traffic through the interface.
+> The script automatically creates the specified interface if it does not exist, and ensures a working VPN connection is setup through the WireGuard interface. Hereafter, it is your responsibility to configure the router to actually route any desired traffic through the interface. See section [Routing traffic through a VPN Interface](#routing-traffic-through-a-vpn-interface) for further details.
 
 ### Parameters
 
@@ -87,3 +87,62 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 - `install-pia-certificate`
     Specifies whether to automatically install the PIA CA certificate for verifying PIA servers.
     Default: `true`.
+
+## Routing traffic through a VPN Interface
+
+The script only serves to keep the WireGuard interface up and running.
+This section thus serves to guide you through configuring RouterOS to route traffic through
+the WireGuard interface.
+
+There are several approaches to routing traffic through the interface:
+- [Firewall mangle rules](https://help.mikrotik.com/docs/spaces/ROS/pages/48660587/Mangle)
+- [Routing rules](https://help.mikrotik.com/docs/spaces/ROS/pages/59965508/Policy+Routing#PolicyRouting-RoutingRules)
+
+
+### Routing using Firewall Mangle
+
+The following config uses firewall mangle rules to route specific websites (in this case
+[myip.wtf](https://myip.wtf/)) through the VPN interface.
+
+The configuration:
+1. Sets up a routing table called `vpn-routing` for all the VPN traffic
+2. Adds a default route and a blackhole to the VPN routing table.
+3. Creates an address list for local addresses, such that the mangle rules doesn't affect
+   connections meant for the LAN.
+4. Creates and adds an example website `myip.wtf` to the address list
+   `route-through-pia-vpn`. The websites in this list will be routed through the VPN.
+5. Sets up mangle rules that
+   1. marks connections that are directed towards websites in the `route-through-pia-vpn`
+   address list.
+   2. moves marked connections to the `vpn-routing` routing table.
+
+If using the following config, replace `vpn-pia-berlin-1` with whatever your VPN interface
+is named.
+
+```routeros
+/routing table
+add disabled=no fib name=vpn-routing
+
+/ip route
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=vpn-pia-berlin-1 \
+    routing-table=vpn-routing scope=30 suppress-hw-offload=no target-scope=10
+add blackhole comment="VPN blackhole" disabled=no distance=100 dst-address=\
+    0.0.0.0/0 gateway="" routing-table=vpn-routing suppress-hw-offload=no
+
+/ip firewall address-list
+add address=10.0.0.0/8 list=rfc1918
+add address=172.16.0.0/12 list=rfc1918
+add address=192.168.0.0/16 list=rfc1918
+
+/ip firewall address-list
+add address=myip.wtf list=route-through-pia-vpn
+
+/ip firewall mangle
+add action=mark-connection chain=prerouting comment=\
+    "Mark connections for VPN" dst-address-list=route-through-pia-vpn \
+    new-connection-mark=pia-vpn-connection
+add action=mark-routing chain=prerouting comment="Move to vpn-routing" \
+    connection-mark=pia-vpn-connection dst-address-list=!rfc1918 \
+    new-routing-mark=vpn-routing
+```
+
