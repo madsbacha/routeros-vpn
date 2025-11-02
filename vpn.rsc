@@ -799,7 +799,8 @@
   };
 
   :do {
+    :local piaPassword "";
     $SetupVPN interface="vpn-pia-berlin-1" region="de_berlin" \
-      pia-username="" pia-password="";
+      pia-username="" pia-password=$piaPassword;
   }
 }
