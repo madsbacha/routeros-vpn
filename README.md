@@ -146,3 +146,13 @@ add action=mark-routing chain=prerouting comment="Move to vpn-routing" \
     new-routing-mark=vpn-routing
 ```
 
+## Troubleshooting
+
+This section covers some of the common issues encountered when using the script.
+
+
+### I'm unable to reach sites routed to the PIA wireguard interface
+Make sure you have allowed your device to route traffic through the interface, by checking your firewall and adjusting it to allow traffic out through the interface. You can allow access using a command such as the following, just keep in mind the order of your firewall rules:
+```routeros
+/ip/firewall/filter/add chain=forward action=accept out-interface=vpn-pia-berlin-1
+```
