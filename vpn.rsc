@@ -599,7 +599,7 @@
 
     :local dstPathArg [:tostr [$required $"dst-path" name="dst-path"]];
 
-    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v4" mode=https dst-path=$dstPathArg
+    /tool/fetch url="https://serverlist.piaservers.net/vpninfo/servers/v7" mode=https dst-path=$dstPathArg
     $DoDelay 1s;
   }
 
