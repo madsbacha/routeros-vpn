@@ -2,10 +2,7 @@
 
 This repository contains a RouterOS script for creating and maintaining a _[private internet access](https://www.privateinternetaccess.com/)_ VPN, by configuring the necessary WireGuard interface and peer, address, and handling of reconfiguring the interface when the connection is lost, because of inactivity, thus reestablishing the connection to always maintain a working configuration.
 
-> [!IMPORTANT]  
-> This repository is still in active development. That being said, the code from the *main* branch is actively being used, and should therefore be in a working state.
-
-This script is verified to work on RouterOS version 7.16.
+This script is verified to work on version 7.22 of RouterOS.
 
 ### Features
 
@@ -15,11 +12,6 @@ This script is verified to work on RouterOS version 7.16.
 - Setup PIA assigned address for the WireGuard interface
 - Automatically setup src masquerading for outgoing traffic on the VPN interface 
 - Verifies TLS certificate of the PIA servers against their self-signed CA certificate
-
-### TODO
-
-- [ ] Port forwarding through PIA VPN.
-- [ ] Consider possibilities for configuring PIA DNS in router.
 
 ## Design
 
@@ -40,9 +32,6 @@ If no address exist, one is created and any excess address configuration for the
   as PIA does not have official support for custom WireGuard config.
 
 ## Getting Started
-
-> [!NOTE]  
-> The following "Getting Started" section is a temporary solution until the script is finished and a more elegant setup is created.
 
 To get started, you need to setup the script `vpn.rsc` in your router, by going to *System > Scripts*, and create a new script with the *source* field set to the contents of `vpn.rsc`. The script only need the `read`, `write`, and `test` policies, and you can therefore disable the rest.
 
