@@ -677,15 +677,6 @@
     };
   }
 
-  :global Portforward do={
-    :global printMethodCall;
-    :global printDebug;
-    :global printVar;
-
-    $printMethodCall $0;
-    # TODO: Port portforwarding.
-  }
-
   :global SetupVPN do={
     :global printMethodCall;
     :global printDebug;
@@ -698,7 +689,6 @@
     :global PIAFetchServers;
     :global DoDelay;
     :global SetupWireGuard;
-    :global Portforward;
     :global ParseBool;
     :global EnsureVPNMasquerading;
 
@@ -712,12 +702,6 @@
     :local setupMasqueradeArg  [$ParseBool [$withDefault value=$"masquerade" default=true]];
     :local verifyCertificateArg [$ParseBool [$withDefault value=$"verify-pia-certificate" default=false]];
     :local routingTableArg     [:tostr [$withDefault value=$"routing-table" default="vpn-routing"]];
-    :local shouldPortForwardArg [$ParseBool [$withDefault value=$"port-forward" default=false]];
-    :local portForwardToArg nothing;
-
-    :if ($shouldPortForwardArg) do={
-      :set portForwardToArg [:tostr [$required $"port-forward-to" name="port-forward-to" description="The local address to forward port-traffic to."]];
-    }
 
     $printMethodCall $0;
     $printVar name="interface"              value=$interfaceArg;
@@ -729,8 +713,6 @@
     $printVar name="masquerade"             value=$setupMasqueradeArg;
     $printVar name="verify-pia-certificate" value=$verifyCertificateArg;
     $printVar name="routing-table"          value=$routingTableArg;
-    $printVar name="port-forward"           value=$shouldPortForwardArg;
-    $printVar name="port-forward-to"        value=$portForwardToArg;
 
     :local canPing [$CanSuccessfullyPingOnInterface interface=$interfaceArg address=$pingAddressArg];
     :if ($canPing) do={
@@ -762,11 +744,6 @@
 
     :if ($setupMasqueradeArg) do={
       $EnsureVPNMasquerading interface=$interfaceArg;
-    }
-
-    :if ($canPing and $shouldPortForwardArg) do={
-      :put "Port forwarding...";
-      $Portforward;
     }
   };
 
