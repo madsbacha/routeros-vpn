@@ -563,29 +563,31 @@
     :global required;
     :global EnsureRoutingTable;
 
-    :local routingTableArg [:tostr [$required $"routing-table" name="routing-table" description="The name of the routing table to add the VPN routes to."]];
-    :local gatewayArg      [:tostr [$required $gateway          name="gateway"       description="The VPN gateway IP (PIA server_vip)."]];
+    :local routingTableArg   [:tostr [$required $"routing-table" name="routing-table" description="The name of the routing table to add the VPN routes to."]];
+    :local gatewayArg        [:tostr [$required $gateway         name="gateway"       description="The VPN gateway IP (PIA server_vip)."]];
+    :local interfaceArg      [:tostr [$required $interface       name="interface"     description="The VPN interface."]];
 
     $printMethodCall $0;
-    $printVar name="routing-table" value=$routingTableArg;
+    $printVar name="routing-table"  value=$routingTableArg;
     $printVar name="gateway"        value=$gatewayArg;
+    $printVar name="interface"      value=$interfaceArg;
 
     $EnsureRoutingTable $routingTableArg;
 
     # Remove any existing routes managed by this script in the table so
     # the operation is idempotent and survives gateway changes.
-    /ip/route/remove [find routing-table=$routingTableArg comment="VPN"];
-    /ip/route/remove [find routing-table=$routingTableArg comment="VPN blackhole"];
+    /ip/route/remove [find routing-table=$routingTableArg comment=("VPN%" . $interfaceArg)];
+    /ip/route/remove [find routing-table=$routingTableArg comment=("VPN blackhole%" . $interfaceArg)];
 
     # Blackhole fallback (high distance — only used if the VPN route is
     # withdrawn by check-gateway).
-    /ip/route/add blackhole comment="VPN blackhole" disabled=no \
+    /ip/route/add blackhole comment=("VPN blackhole%" . $interfaceArg) disabled=no \
       distance=100 dst-address=0.0.0.0/0 gateway="" \
       routing-table=$routingTableArg;
 
     # Primary route via the PIA VPN gateway.
-    /ip/route/add check-gateway=ping comment="VPN" disabled=no \
-      distance=1 dst-address=0.0.0.0/0 gateway=$gatewayArg \
+    /ip/route/add check-gateway=ping comment=("VPN%" . $interfaceArg) disabled=no \
+      distance=1 dst-address=0.0.0.0/0 gateway=(($gatewayArg . "%") . $interfaceArg) \
       routing-table=$routingTableArg;
 
     $printDebug ("VPN routes configured for routing-table " . $routingTableArg);
@@ -656,7 +658,7 @@
     # Configure routes in the dedicated routing table so traffic marked
     # for VPN egress goes through the tunnel, with a blackhole fallback.
     $EnsureVPNRoutes routing-table=$routingTableArg \
-      gateway=($addKeyResult->"server_vip");
+      gateway=($addKeyResult->"server_vip") interface=($interfaceArg);
   }
 
   :global EnsureVPNMasquerading do={
