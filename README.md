@@ -55,7 +55,7 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 ```
 
 > [!IMPORTANT]
-> The script automatically creates the specified interface if it does not exist, and ensures a working VPN connection is setup through the WireGuard interface. Hereafter, it is your responsibility to configure the router to actually route any desired traffic through the interface. See section [Routing traffic through a VPN Interface](#routing-traffic-through-a-vpn-interface) for further details.
+> The script automatically creates the specified interface if it does not exist, and ensures a working VPN connection is setup through the WireGuard interface along with a routing table. Hereafter, it is your responsibility to configure the router to actually route any desired traffic through the interface or to the routing table. See section [Routing traffic through a VPN Interface](#routing-traffic-through-a-vpn-interface) for further details.
 
 ### Parameters
 
@@ -84,9 +84,9 @@ Lastly, setup a schedule to run the script every 15 minutes. This ensures the co
 - `verify-pia-certificate`
     Specifies whether to verify the TLS certificate of the PIA servers.
     Default: `true`.
-- `install-pia-certificate`
-    Specifies whether to automatically install the PIA CA certificate for verifying PIA servers.
-    Default: `true`.
+- `routing-table`
+    Specifies the name of the routing table that is automatically created for this specific VPN interface and its traffic.
+    Default: `vpn-routing`
 
 ## Routing traffic through a VPN Interface
 
